@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-TOPSIS Implementation: Static and Dynamic
-==========================================
-
-Includes standard TOPSIS and trajectory-based Dynamic TOPSIS for panel data.
-"""
+"""TOPSIS: Technique for Order Preference by Similarity to Ideal Solution."""
 
 import numpy as np
 import pandas as pd

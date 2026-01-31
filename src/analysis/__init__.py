@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Analysis Module
-===============
-
-Convergence testing, sensitivity analysis, and validation.
-"""
+"""Analysis tools: convergence, sensitivity, and validation."""
 
 from .convergence import ConvergenceAnalysis, ConvergenceResult
 from .sensitivity import SensitivityAnalysis, SensitivityResult

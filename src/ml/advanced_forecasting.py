@@ -1,23 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Advanced ML Forecasting Module
-================================
-
-State-of-the-art, production-ready machine learning methods for predicting
-next year MCDM scores from historical panel data.
-
-Features:
-- Ensemble of gradient boosting models (XGBoost, LightGBM, CatBoost style)
-- Advanced feature engineering for time series
-- Attention-based temporal modeling
-- Stacking meta-learner for optimal combination
-- Proper time-series cross-validation
-- Uncertainty quantification with prediction intervals
-- Robust handling of missing data and outliers
-
-Author: ML-MCDM Research Team
-Version: 2.0.0
-"""
+"""Advanced ensemble forecasting with gradient boosting models."""
 
 import numpy as np
 import pandas as pd
@@ -440,8 +422,7 @@ class BayesianRidgeForecaster(BaseForecaster):
     def __init__(self):
         self.model = BayesianRidge(
             compute_score=True,
-            fit_intercept=True,
-            normalize=False
+            fit_intercept=True
         )
         self.scaler = StandardScaler()
         self.feature_importance_ = None

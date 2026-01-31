@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Fuzzy PROMETHEE Implementation
-===============================
-
-Fuzzy PROMETHEE with triangular fuzzy numbers for outranking analysis
-under uncertainty.
-"""
+"""Fuzzy PROMETHEE with triangular fuzzy numbers."""
 
 import numpy as np
 import pandas as pd

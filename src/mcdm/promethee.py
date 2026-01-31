@@ -1,16 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-PROMETHEE Implementation
-=========================
-
-PROMETHEE (Preference Ranking Organization METHod for Enrichment Evaluations)
-Outranking MCDM method based on pairwise comparisons with preference functions.
-
-Includes:
-- PROMETHEE I: Partial ranking (Phi+, Phi-)
-- PROMETHEE II: Complete ranking (net flow Phi)
-- Multi-Period PROMETHEE: Panel data extension with temporal dynamics
-"""
+"""PROMETHEE: Outranking method based on pairwise preference comparisons."""
 
 import numpy as np
 import pandas as pd

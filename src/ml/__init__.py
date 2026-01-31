@@ -1,17 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Machine Learning Module
-========================
-
-Comprehensive ML toolkit for panel data analysis and forecasting:
-- Panel regression for fixed/random effects
-- Random Forest with Time-Series CV
-- LSTM neural network forecasting
-- Rough Sets for feature reduction
-- Advanced ML Forecasting (Gradient Boosting Ensemble)
-- Neural Network Forecasting (MLP, Attention)
-- Unified Forecasting Orchestrator
-"""
+"""Machine learning methods for panel data analysis and forecasting."""
 
 # Legacy modules
 from .panel_regression import PanelRegression, PanelRegressionResult

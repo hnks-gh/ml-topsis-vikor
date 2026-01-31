@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Logging Module with Rich Formatting
-====================================
-"""
+"""Logging utilities with colored console output."""
 
 import logging
 import sys

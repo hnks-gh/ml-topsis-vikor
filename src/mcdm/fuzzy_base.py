@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Fuzzy Number Base Classes
-==========================
-
-Common fuzzy number types and operations for all Fuzzy MCDM methods.
-Supports triangular and trapezoidal fuzzy numbers.
-"""
+"""Fuzzy number base classes for fuzzy MCDM methods."""
 
 import numpy as np
 import pandas as pd

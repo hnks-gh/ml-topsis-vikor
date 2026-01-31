@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Fuzzy EDAS Implementation
-==========================
-
-Fuzzy EDAS with triangular fuzzy numbers for distance-based
-decision making under uncertainty using average solution.
-"""
+"""Fuzzy EDAS with triangular fuzzy numbers."""
 
 import numpy as np
 import pandas as pd

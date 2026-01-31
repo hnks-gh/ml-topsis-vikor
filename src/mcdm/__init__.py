@@ -1,22 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-MCDM Module - Comprehensive Multi-Criteria Decision Making Methods
-===================================================================
-
-Production-ready implementations of MCDM methods with both traditional
-and fuzzy variants for decision making under uncertainty.
-
-Methods:
-- TOPSIS: Distance to ideal solution
-- VIKOR: Compromise solution approach
-- PROMETHEE: Outranking method
-- COPRAS: Utility-based method
-- EDAS: Distance from average solution
-
-Each method has:
-- Traditional version (crisp values)
-- Fuzzy version (triangular fuzzy numbers for uncertainty)
-"""
+"""Multi-Criteria Decision Making methods (traditional and fuzzy variants)."""
 
 # Fuzzy base classes
 from .fuzzy_base import (

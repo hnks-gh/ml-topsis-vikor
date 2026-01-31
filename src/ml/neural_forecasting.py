@@ -1,22 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Neural Network-based Time Series Forecasting
-=============================================
-
-Production-ready neural network models for panel data forecasting.
-Implements attention mechanisms and temporal modeling without 
-requiring TensorFlow/PyTorch.
-
-Features:
-- Multi-layer Perceptron with skip connections
-- Attention-weighted temporal aggregation
-- Self-normalizing neural networks
-- Ensemble of neural architectures
-- Proper regularization and dropout simulation
-
-Author: ML-MCDM Research Team
-Version: 2.0.0
-"""
+"""Neural network forecasting with attention mechanisms."""
 
 import numpy as np
 import pandas as pd

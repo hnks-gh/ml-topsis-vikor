@@ -1,17 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-COPRAS Implementation
-======================
-
-COPRAS (COmplex PRoportional ASsessment)
-Utility-based MCDM method with separate handling of benefit and cost criteria.
-
-Features:
-- Direct and proportional dependence on criteria
-- Simple computational process
-- Clear interpretation of utility degree
-- Multi-Period extension for panel data
-"""
+"""COPRAS: Complex Proportional Assessment method."""
 
 import numpy as np
 import pandas as pd

@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Rough Set Theory - Attribute Reduction
-=======================================
-
-Reduces dimensionality by finding minimal attribute subsets that preserve
-classification ability.
-"""
+"""Rough Set attribute reduction for feature selection."""
 
 import numpy as np
 import pandas as pd
@@ -192,8 +186,12 @@ class RoughSetReducer:
         classes = {}
         
         for obj in objects:
-            # Get attribute values as tuple
-            values = tuple(df.loc[obj, attributes].values)
+            # Get attribute values as tuple (convert to list first to handle categorical)
+            raw_values = df.loc[obj, attributes]
+            if hasattr(raw_values, 'tolist'):
+                values = tuple(raw_values.tolist())
+            else:
+                values = tuple(raw_values.values.tolist() if hasattr(raw_values.values, 'tolist') else list(raw_values.values))
             
             if values not in classes:
                 classes[values] = []

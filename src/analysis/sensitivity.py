@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Sensitivity Analysis
-====================
-
-Weight perturbation and robustness testing for MCDM methods.
-"""
+"""Sensitivity analysis and robustness testing."""
 
 import numpy as np
 import pandas as pd

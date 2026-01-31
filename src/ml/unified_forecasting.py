@@ -1,21 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Unified Forecasting Orchestrator
-=================================
-
-Production-ready orchestrator that combines all forecasting methods
-into a single, cohesive prediction system.
-
-Implements:
-- Multi-model ensemble with optimal weighting
-- Automatic model selection based on data characteristics
-- Comprehensive uncertainty quantification
-- Feature importance aggregation
-- Performance validation and monitoring
-
-Author: ML-MCDM Research Team
-Version: 2.0.0
-"""
+"""Unified forecasting orchestrator combining multiple ML methods."""
 
 import numpy as np
 import pandas as pd

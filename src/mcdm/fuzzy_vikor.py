@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Fuzzy VIKOR Implementation
-===========================
-
-Fuzzy VIKOR with triangular fuzzy numbers for decision making under uncertainty.
-Based on compromise solution approach with fuzzy arithmetic.
-"""
+"""Fuzzy VIKOR with triangular fuzzy numbers."""
 
 import numpy as np
 import pandas as pd

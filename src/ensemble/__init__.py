@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Ensemble Module
-===============
-
-Stacking meta-learner and rank aggregation methods.
-"""
+"""Ensemble methods: stacking and rank aggregation."""
 
 from .stacking import StackingEnsemble, StackingResult
 from .aggregation import (

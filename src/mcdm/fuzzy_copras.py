@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Fuzzy COPRAS Implementation
-============================
-
-Fuzzy COPRAS with triangular fuzzy numbers for utility-based
-decision making under uncertainty.
-"""
+"""Fuzzy COPRAS with triangular fuzzy numbers."""
 
 import numpy as np
 import pandas as pd

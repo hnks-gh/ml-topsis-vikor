@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Panel Data Loader and Preprocessor
-===================================
-
-Handles loading, validation, and preprocessing of panel data.
-"""
+"""Panel data loading, validation, and preprocessing."""
 
 import numpy as np
 import pandas as pd

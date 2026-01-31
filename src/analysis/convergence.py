@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Convergence Analysis
-====================
-
-Beta and Sigma convergence tests for panel data.
-"""
+"""Beta and Sigma convergence analysis for panel data."""
 
 import numpy as np
 import pandas as pd

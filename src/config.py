@@ -1,14 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Configuration Module for Panel Data Econometric-ML Hybrid TOPSIS Framework
-===========================================================================
-
-Production-ready configuration with comprehensive parameter management.
-Supports 64 provinces × 20 components × 5 years (2020-2024) panel data.
-
-Author: ML-MCDM Research Team
-Version: 2.0.0
-"""
+"""Configuration management for ML-MCDM pipeline."""
 
 from dataclasses import dataclass, field
 from pathlib import Path

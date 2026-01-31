@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Random Forest with Time-Series Cross-Validation
-=================================================
-
-Proper ML validation for panel data using temporal splits.
-"""
+"""Random Forest with time-series cross-validation."""
 
 import numpy as np
 import pandas as pd

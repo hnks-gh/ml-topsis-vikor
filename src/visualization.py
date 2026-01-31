@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Visualization Module
-====================
-
-Professional high-resolution visualization for panel data MCDM analysis.
-All figures are saved as individual high-resolution PNG files.
-"""
+"""High-resolution visualization for MCDM analysis."""
 
 import numpy as np
 import pandas as pd

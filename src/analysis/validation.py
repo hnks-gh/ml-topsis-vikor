@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Cross-Validation and Bootstrap Validation
-==========================================
-
-Model validation for robust ML and MCDM results.
-"""
+"""Cross-validation and bootstrap validation utilities."""
 
 import numpy as np
 import pandas as pd

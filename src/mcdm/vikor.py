@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-VIKOR Implementation
-=====================
-
-VIKOR (VIseKriterijumska Optimizacija I Kompromisno Resenje)
-Multi-Criteria Decision Making method focusing on compromise solutions.
-"""
+"""VIKOR: Multi-criteria compromise ranking method."""
 
 import numpy as np
 import pandas as pd

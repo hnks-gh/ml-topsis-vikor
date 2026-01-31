@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Stacking Ensemble - Meta-Learner
-================================
-
-Combines predictions from multiple base models using stacking.
-"""
+"""Stacking ensemble meta-learner."""
 
 import numpy as np
 import pandas as pd

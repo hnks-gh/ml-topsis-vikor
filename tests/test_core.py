@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Basic tests for ML-MCDM framework.
-"""
+"""Core unit tests for ML-MCDM framework."""
 
 import pytest
 import numpy as np

@@ -1,26 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-ML-MCDM Panel Data Analysis
-==============================
-
-Run this file to execute the complete analysis pipeline.
+Entry point for ML-MCDM analysis pipeline.
 
 Usage:
-    python main.py                      # Run with data/data.csv (default)
-    python main.py path/to/other.csv   # Run with custom data file
+    python run.py                      # Run with data/data.csv (default)
+    python run.py path/to/data.csv     # Run with custom data file
 """
 
 import sys
 from pathlib import Path
 
-# Configuration - modify these as needed
+# Configuration
 CONFIG = {
-    'data_path': 'data/data.csv',  # Path to data file
-    'n_provinces': 64,           # Number of entities
-    'n_years': 5,                # Number of time periods  
-    'n_components': 20,          # Number of criteria
-    'output_dir': 'outputs',     # Output directory
+    'data_path': 'data/data.csv',
+    'n_provinces': 64,
+    'n_years': 5,
+    'n_components': 20,
+    'output_dir': 'outputs',
 }
 
 

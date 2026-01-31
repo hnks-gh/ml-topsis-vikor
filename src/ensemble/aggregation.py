@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Rank Aggregation Methods
-========================
-
-Borda Count, Copeland, and other rank aggregation techniques.
-"""
+"""Rank aggregation methods: Borda Count, Copeland, and consensus."""
 
 import numpy as np
 import pandas as pd

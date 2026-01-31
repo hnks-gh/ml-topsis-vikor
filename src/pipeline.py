@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Main Pipeline Orchestrator
-==========================
-
-Comprehensive ML-MCDM panel data analysis pipeline.
-Produces professional high-resolution outputs.
-"""
+"""ML-MCDM pipeline orchestrator."""
 
 import numpy as np
 import pandas as pd
@@ -57,7 +51,7 @@ class PipelineResult:
     critic_weights: np.ndarray
     ensemble_weights: np.ndarray
     
-    # MCDM Results
+    # MCDM Results (Current Year - 2024)
     topsis_scores: np.ndarray
     topsis_rankings: np.ndarray
     dynamic_topsis_scores: np.ndarray
@@ -78,9 +72,12 @@ class PipelineResult:
     convergence_result: Any
     sensitivity_result: Any
     
+    # Future Predictions (Next Year - 2025)
+    future_predictions: Optional[Dict[str, Any]] = None
+    
     # Meta
-    execution_time: float
-    config: Config
+    execution_time: float = 0.0
+    config: Config = None
     
     def get_final_ranking_df(self) -> pd.DataFrame:
         """Get final aggregated ranking as DataFrame."""
@@ -92,6 +89,22 @@ class PipelineResult:
             'topsis_rank': self.topsis_rankings,
             'kendall_w': self.aggregated_ranking.kendall_w
         }).sort_values('final_rank')
+    
+    def get_future_ranking_df(self) -> Optional[pd.DataFrame]:
+        """Get predicted future year ranking as DataFrame."""
+        if self.future_predictions is None:
+            return None
+        
+        entities = self.panel_data.entities
+        fp = self.future_predictions
+        return pd.DataFrame({
+            'province': entities,
+            'predicted_topsis_score': fp['topsis_scores'],
+            'predicted_topsis_rank': fp['topsis_rankings'],
+            'predicted_vikor_q': fp['vikor']['Q'],
+            'predicted_vikor_rank': fp['vikor']['rankings'],
+            'prediction_year': fp['prediction_year']
+        }).sort_values('predicted_topsis_rank')
 
 
 class MLTOPSISPipeline:
@@ -198,6 +211,16 @@ class MLTOPSISPipeline:
         with ProgressLogger(self.logger, "Phase 6: Advanced Analysis"):
             analysis_results = self._run_analysis(panel_data, mcdm_results, weights)
         
+        # Phase 6.5: Future Year Prediction (2025)
+        with ProgressLogger(self.logger, "Phase 6.5: Future Year Prediction"):
+            try:
+                future_predictions = self._run_future_prediction(panel_data, weights)
+            except Exception as e:
+                self.logger.warning(f"Future prediction failed: {e}")
+                import traceback
+                self.logger.debug(traceback.format_exc())
+                future_predictions = None
+        
         execution_time = time.time() - start_time
         
         # Phase 7: Generate All Visualizations (high-resolution individual charts)
@@ -214,7 +237,8 @@ class MLTOPSISPipeline:
         with ProgressLogger(self.logger, "Phase 8: Saving All Results"):
             saved_files = self.output_manager.save_all_results(
                 panel_data, weights, mcdm_results, ml_results,
-                ensemble_results, analysis_results, execution_time
+                ensemble_results, analysis_results, execution_time,
+                future_predictions=future_predictions
             )
             self.logger.info(f"Saved {len(saved_files['files'])} result categories")
         
@@ -243,6 +267,7 @@ class MLTOPSISPipeline:
             aggregated_ranking=ensemble_results['aggregated'],
             convergence_result=analysis_results['convergence'],
             sensitivity_result=analysis_results['sensitivity'],
+            future_predictions=future_predictions,
             execution_time=execution_time,
             config=self.config
         )
@@ -599,6 +624,126 @@ class MLTOPSISPipeline:
         
         return results
     
+    def _run_future_prediction(self, panel_data: PanelData,
+                               weights: Dict[str, np.ndarray]) -> Dict[str, Any]:
+        """
+        Predict component values and MCDM scores for the next year (2025).
+        
+        Uses all historical data (2020-2024) to forecast 2025 values,
+        then calculates TOPSIS and VIKOR rankings for predicted data.
+        
+        Parameters
+        ----------
+        panel_data : PanelData
+            Panel data with historical observations (2020-2024)
+        weights : Dict[str, np.ndarray]
+            Calculated criteria weights
+        
+        Returns
+        -------
+        Dict[str, Any]
+            Predicted components, MCDM scores, and rankings for 2025
+        """
+        from .ml import UnifiedForecaster, ForecastMode
+        
+        current_year = max(panel_data.years)
+        prediction_year = current_year + 1
+        
+        self.logger.info(f"Forecasting year {prediction_year} using data from {min(panel_data.years)}-{current_year}")
+        
+        # Step 1: Forecast all components for 2025 using UnifiedForecaster
+        self.logger.info("Training ML models on all historical data...")
+        
+        forecaster = UnifiedForecaster(
+            mode=ForecastMode.BALANCED,
+            include_neural=True,
+            include_tree_ensemble=True,
+            include_linear=True,
+            cv_folds=min(3, len(panel_data.years) - 1),
+            random_state=42,
+            verbose=False
+        )
+        
+        # Forecast all components
+        forecast_result = forecaster.forecast(
+            panel_data,
+            target_components=panel_data.components,
+            holdout_validation=False  # Use ALL data for training
+        )
+        
+        # Get predicted component values for 2025
+        predicted_components = forecast_result.predictions
+        self.logger.info(f"Predicted {len(panel_data.components)} components for {len(panel_data.entities)} entities")
+        
+        # Step 2: Calculate MCDM scores on predicted 2025 data
+        self.logger.info("Calculating MCDM scores for predicted 2025 data...")
+        
+        # Use ensemble weights for MCDM
+        w = weights['ensemble']
+        weights_dict = {c: w[i] for i, c in enumerate(panel_data.components)}
+        
+        # Ensure predicted_components is properly formatted
+        if isinstance(predicted_components, pd.DataFrame):
+            predicted_df = predicted_components.copy()
+            # Ensure columns match component order
+            predicted_df = predicted_df[panel_data.components]
+        else:
+            predicted_df = pd.DataFrame(
+                predicted_components,
+                index=panel_data.entities,
+                columns=panel_data.components
+            )
+        
+        # Clip predictions to valid range [0, 1]
+        predicted_df = predicted_df.clip(0, 1)
+        
+        # Calculate TOPSIS for 2025 predictions
+        topsis = TOPSISCalculator(normalization=self.config.topsis.normalization.value)
+        topsis_result = topsis.calculate(predicted_df, weights_dict)
+        
+        predicted_topsis_scores = topsis_result.scores.values
+        predicted_topsis_rankings = topsis_result.ranks.values
+        
+        self.logger.info(f"Predicted TOPSIS: Top performer score = {topsis_result.scores.max():.4f}")
+        
+        # Calculate VIKOR for 2025 predictions
+        vikor = VIKORCalculator(v=self.config.vikor.v)
+        vikor_result = vikor.calculate(predicted_df, weights_dict)
+        
+        predicted_vikor = {
+            'Q': vikor_result.Q,
+            'S': vikor_result.S,
+            'R': vikor_result.R,
+            'rankings': vikor_result.final_ranks
+        }
+        
+        self.logger.info(f"Predicted VIKOR: Best alternative Q = {vikor_result.Q.min():.4f}")
+        
+        # Step 3: Compile future prediction results
+        future_results = {
+            'prediction_year': prediction_year,
+            'training_years': list(panel_data.years),
+            'predicted_components': predicted_df,
+            'prediction_uncertainty': forecast_result.uncertainty,
+            'topsis_scores': predicted_topsis_scores,
+            'topsis_rankings': predicted_topsis_rankings,
+            'topsis_result': topsis_result,
+            'vikor': predicted_vikor,
+            'vikor_result': vikor_result,
+            'model_contributions': forecast_result.model_contributions,
+            'forecast_summary': forecast_result.data_summary
+        }
+        
+        # Log top 5 predicted rankings
+        top_indices = np.argsort(predicted_topsis_rankings)[:5]
+        self.logger.info(f"Predicted {prediction_year} Top 5:")
+        for i, idx in enumerate(top_indices):
+            entity = panel_data.entities[idx]
+            score = predicted_topsis_scores[idx]
+            self.logger.info(f"  {i+1}. {entity}: {score:.4f}")
+        
+        return future_results
+
     def _generate_visualizations(self, panel_data: PanelData,
                                 mcdm_results: Dict[str, Any],
                                 ensemble_results: Dict[str, Any],

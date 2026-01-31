@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-LSTM Forecaster for Panel Data
-===============================
-
-Time-series forecasting using LSTM neural networks.
-Predicts future scores based on historical trajectories.
-"""
+"""LSTM neural network forecaster for panel data."""
 
 import numpy as np
 import pandas as pd

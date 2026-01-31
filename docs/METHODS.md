@@ -1,818 +1,356 @@
-# ML-MCDM Methods Documentation
+# ML-MCDM Methods Documentation v2.0
 
-This document provides detailed descriptions of all methods implemented in the ML-MCDM framework, including mathematical formulations, parameters, and usage guidelines.
+This document describes the refactored ML-MCDM framework architecture that separates:
+- **Traditional MCDM**: Applied to the last year of panel data
+- **Fuzzy MCDM**: Applied to the last year with uncertainty from temporal variance
+- **ML Forecasting**: Uses all historical data to predict next year values
 
 ---
 
 ## Table of Contents
 
-1. [Weight Calculation Methods](#1-weight-calculation-methods)
-   - [Entropy Weights](#11-entropy-weights)
-   - [CRITIC Weights](#12-critic-weights)
-   - [Ensemble Weights](#13-ensemble-weights)
-2. [MCDM Methods](#2-mcdm-methods)
-   - [TOPSIS](#21-topsis)
-   - [Dynamic TOPSIS](#22-dynamic-topsis)
-   - [VIKOR](#23-vikor)
-   - [Fuzzy TOPSIS](#24-fuzzy-topsis)
-   - [PROMETHEE](#25-promethee)
-   - [COPRAS](#26-copras)
-   - [EDAS](#27-edas)
-3. [Machine Learning Methods](#3-machine-learning-methods)
-   - [Panel Regression](#31-panel-regression)
-   - [Random Forest with Time-Series CV](#32-random-forest-with-time-series-cv)
-   - [LSTM Forecasting](#33-lstm-forecasting)
-   - [Rough Set Attribute Reduction](#34-rough-set-attribute-reduction)
-4. [Ensemble Methods](#4-ensemble-methods)
-   - [Stacking Meta-Learner](#41-stacking-meta-learner)
-   - [Borda Count](#42-borda-count)
-   - [Copeland Method](#43-copeland-method)
-5. [Analysis Methods](#5-analysis-methods)
-   - [Convergence Analysis](#51-convergence-analysis)
-   - [Sensitivity Analysis](#52-sensitivity-analysis)
+1. [Architecture Overview](#1-architecture-overview)
+2. [Weight Calculation Methods](#2-weight-calculation-methods)
+3. [Traditional MCDM Methods](#3-traditional-mcdm-methods)
+4. [Fuzzy MCDM Methods](#4-fuzzy-mcdm-methods)
+5. [Advanced ML Forecasting](#5-advanced-ml-forecasting)
+6. [Pipeline Integration](#6-pipeline-integration)
 
 ---
 
-## 1. Weight Calculation Methods
+## 1. Architecture Overview
 
-Weight calculation methods determine the importance of each criterion in the decision-making process. This framework implements objective weighting methods that derive weights from the data itself.
+### 1.1 Design Philosophy
 
-### 1.1 Entropy Weights
+The v2 architecture follows a clear separation of concerns:
 
-**Source:** Shannon (1948), Information Theory
+```
+Panel Data (Multiple Years)
+    │
+    ├── Last Year Data ─────────┬──► Traditional MCDM (5 methods)
+    │                           │
+    │   Temporal Variance ──────┴──► Fuzzy MCDM (5 methods)
+    │
+    └── All Historical Data ───────► ML Forecasting ──► Next Year Predictions
+                                            │
+                                            └──► Future MCDM Application
+```
 
-**Purpose:** Assign higher weights to criteria with more variation (information content).
+### 1.2 MCDM Methods Implemented
 
-**Mathematical Formulation:**
+| Method | Traditional | Fuzzy | Description |
+|--------|------------|-------|-------------|
+| TOPSIS | ✓ | ✓ | Technique for Order Preference by Similarity to Ideal Solution |
+| VIKOR | ✓ | ✓ | Multi-criteria Optimization and Compromise Solution |
+| PROMETHEE | ✓ | ✓ | Preference Ranking Organization Method for Enrichment Evaluations |
+| COPRAS | ✓ | ✓ | Complex Proportional Assessment |
+| EDAS | ✓ | ✓ | Evaluation based on Distance from Average Solution |
 
-1. **Normalize the decision matrix** to create proportions:
-   $$p_{ij} = \frac{x_{ij}}{\sum_{i=1}^{m} x_{ij}}$$
+### 1.3 ML Forecasting Methods
 
-2. **Calculate entropy** for each criterion:
-   $$E_j = -k \sum_{i=1}^{m} p_{ij} \ln(p_{ij})$$
-   where $k = \frac{1}{\ln(m)}$ is a normalizing constant
-
-3. **Calculate divergence** (information content):
-   $$d_j = 1 - E_j$$
-
-4. **Normalize to obtain weights**:
-   $$w_j = \frac{d_j}{\sum_{j=1}^{n} d_j}$$
-
-**Interpretation:**
-- Higher entropy → Lower weight (criterion doesn't discriminate well)
-- Lower entropy → Higher weight (criterion discriminates alternatives)
-
-**Parameters:**
-- `epsilon`: Small constant to prevent log(0), default = 1e-10
-
-**Code Location:** `src/mcdm/weights.py` → `EntropyWeightCalculator`
-
----
-
-### 1.2 CRITIC Weights
-
-**Source:** Diakoulaki et al. (1995)
-
-**Full Name:** Criteria Importance Through Inter-criteria Correlation
-
-**Purpose:** Consider both the contrast intensity (standard deviation) and conflict (correlation) between criteria.
-
-**Mathematical Formulation:**
-
-1. **Calculate standard deviation** (contrast intensity):
-   $$\sigma_j = \sqrt{\frac{1}{m-1} \sum_{i=1}^{m} (x_{ij} - \bar{x}_j)^2}$$
-
-2. **Calculate correlation matrix** between criteria:
-   $$r_{jk} = \text{corr}(X_j, X_k)$$
-
-3. **Calculate conflict** for each criterion:
-   $$\text{conflict}_j = \sum_{k=1}^{n} (1 - r_{jk})$$
-
-4. **Calculate information content**:
-   $$C_j = \sigma_j \times \text{conflict}_j$$
-
-5. **Normalize to obtain weights**:
-   $$w_j = \frac{C_j}{\sum_{j=1}^{n} C_j}$$
-
-**Interpretation:**
-- High standard deviation → High weight (good discrimination)
-- Low correlation with others → High weight (provides unique information)
-
-**Code Location:** `src/mcdm/weights.py` → `CRITICWeightCalculator`
+- **Gradient Boosting Ensemble**: XGBoost-style with Huber loss
+- **Random Forest**: With time-series cross-validation
+- **Extra Trees**: For ensemble diversity
+- **Bayesian Ridge**: For uncertainty quantification
+- **Neural Networks**: MLP with residual connections and attention
 
 ---
 
-### 1.3 Ensemble Weights
+## 2. Weight Calculation Methods
 
-**Purpose:** Combine multiple weighting methods for more robust weight estimation.
+### 2.1 Entropy Weights
 
-**Aggregation Methods:**
+Assigns higher weights to criteria with more variation (information content).
 
-1. **Arithmetic Mean** (weighted):
-   $$w_j^{ensemble} = \sum_{m} \alpha_m \cdot w_j^{(m)}$$
-   where $\alpha_m$ is the weight for method $m$
+$$w_j = \frac{1 - E_j}{\sum_{k=1}^{n} (1 - E_k)}$$
 
-2. **Geometric Mean** (default):
-   $$w_j^{ensemble} = \left( \prod_{m} w_j^{(m)} \right)^{1/M}$$
+where $E_j = -\frac{1}{\ln(m)} \sum_{i=1}^{m} p_{ij} \ln(p_{ij})$
 
-3. **Harmonic Mean**:
-   $$w_j^{ensemble} = \frac{M}{\sum_{m} \frac{1}{w_j^{(m)}}}$$
+### 2.2 CRITIC Weights
 
-**Default Configuration:** 50% Entropy + 50% CRITIC with geometric mean
+Considers both contrast intensity and inter-criteria correlation.
 
-**Code Location:** `src/mcdm/weights.py` → `EnsembleWeightCalculator`
+$$w_j = \frac{\sigma_j \cdot \sum_{k}(1-r_{jk})}{\sum_{j} \sigma_j \cdot \sum_{k}(1-r_{jk})}$$
 
 ---
 
-## 2. MCDM Methods
+## 3. Traditional MCDM Methods
 
-### 2.1 TOPSIS
+All traditional methods operate on the **last year** of panel data only.
 
-**Source:** Hwang & Yoon (1981)
+### 3.1 TOPSIS
 
-**Full Name:** Technique for Order of Preference by Similarity to Ideal Solution
+**Technique for Order Preference by Similarity to Ideal Solution**
 
-**Purpose:** Rank alternatives based on their distance to the ideal (best) and anti-ideal (worst) solutions.
+**Steps:**
+1. Normalize the decision matrix
+2. Calculate weighted normalized matrix
+3. Determine ideal ($A^+$) and anti-ideal ($A^-$) solutions
+4. Calculate distances to ideal and anti-ideal
+5. Calculate relative closeness: $C_i = \frac{D_i^-}{D_i^+ + D_i^-}$
 
-**Algorithm Steps:**
+**Code:** `src/mcdm/topsis.py`
 
-1. **Construct the decision matrix** $X = [x_{ij}]_{m \times n}$
+### 3.2 VIKOR
 
-2. **Normalize the matrix** (vector normalization):
-   $$r_{ij} = \frac{x_{ij}}{\sqrt{\sum_{i=1}^{m} x_{ij}^2}}$$
+**Multi-criteria Optimization and Compromise Solution**
 
-3. **Apply weights**:
-   $$v_{ij} = w_j \cdot r_{ij}$$
+**Steps:**
+1. Determine best ($f_j^*$) and worst ($f_j^-$) values
+2. Calculate $S_i$ (maximum group utility) and $R_i$ (minimum regret)
+3. Calculate $Q_i = v \cdot \frac{S_i - S^*}{S^- - S^*} + (1-v) \cdot \frac{R_i - R^*}{R^- - R^*}$
 
-4. **Determine ideal solutions**:
-   - Ideal (best): $A^+ = \{v_1^+, v_2^+, ..., v_n^+\}$
-     - For benefit criteria: $v_j^+ = \max_i(v_{ij})$
-     - For cost criteria: $v_j^+ = \min_i(v_{ij})$
-   - Anti-ideal (worst): $A^- = \{v_1^-, v_2^-, ..., v_n^-\}$
-     - For benefit criteria: $v_j^- = \min_i(v_{ij})$
-     - For cost criteria: $v_j^- = \max_i(v_{ij})$
+**Code:** `src/mcdm/vikor.py`
 
-5. **Calculate distances**:
-   $$D_i^+ = \sqrt{\sum_{j=1}^{n} (v_{ij} - v_j^+)^2}$$
-   $$D_i^- = \sqrt{\sum_{j=1}^{n} (v_{ij} - v_j^-)^2}$$
+### 3.3 PROMETHEE
 
-6. **Calculate closeness coefficient**:
-   $$C_i = \frac{D_i^-}{D_i^+ + D_i^-}$$
+**Preference Ranking Organization Method**
 
-7. **Rank alternatives** by $C_i$ (higher is better)
+**Steps:**
+1. Calculate pairwise preference functions
+2. Calculate aggregated preference indices
+3. Compute positive flow $\Phi^+(a)$ and negative flow $\Phi^-(a)$
+4. Calculate net flow: $\Phi(a) = \Phi^+(a) - \Phi^-(a)$
 
-**Normalization Options:**
-- `vector`: Default, preserves relative distances
-- `minmax`: Scales to [0, 1] range
-- `max`: Divides by maximum value
+**Preference Functions:**
+- Usual: $P(d) = 0$ if $d \leq 0$, else $1$
+- V-shape: $P(d) = \min(1, d/p)$
+- Gaussian: $P(d) = 1 - e^{-d^2/2\sigma^2}$
 
-**Code Location:** `src/mcdm/topsis.py` → `TOPSISCalculator`
+**Code:** `src/mcdm/promethee.py`
 
----
+### 3.4 COPRAS
 
-### 2.2 Dynamic TOPSIS
+**Complex Proportional Assessment**
 
-**Purpose:** Extend TOPSIS for panel data by incorporating temporal dynamics.
+**Steps:**
+1. Calculate normalized weighted matrix
+2. Sum maximizing criteria: $S_i^+ = \sum_{j \in J_{max}} w_j \cdot r_{ij}$
+3. Sum minimizing criteria: $S_i^- = \sum_{j \in J_{min}} w_j \cdot r_{ij}$
+4. Calculate relative significance: $Q_i = S_i^+ + \frac{\sum S_i^-}{S_i^- \cdot \sum(1/S_i^-)}$
+5. Utility degree: $N_i = \frac{Q_i}{Q_{max}} \times 100\%$
 
-**Key Features:**
+**Code:** `src/mcdm/copras.py`
 
-1. **Temporal Discounting**: Recent years receive higher weights
-   $$\delta_t = \gamma^{T-t}$$
-   where $\gamma$ is the discount factor (default 0.95)
+### 3.5 EDAS
 
-2. **Trajectory Analysis**: Consider score improvement trends
-   $$\text{trajectory}_i = \frac{1}{T-1} \sum_{t=2}^{T} (s_{it} - s_{i,t-1})$$
+**Evaluation based on Distance from Average Solution**
 
-3. **Stability Score**: Penalize high volatility
-   $$\text{stability}_i = 1 - \frac{\sigma_i}{\max(\sigma)}$$
+**Steps:**
+1. Calculate average solution (AV)
+2. Calculate Positive Distance from Average (PDA)
+3. Calculate Negative Distance from Average (NDA)
+4. Weighted sum: $SP_i = \sum w_j \cdot PDA_{ij}$, $SN_i = \sum w_j \cdot NDA_{ij}$
+5. Normalize: $NSP_i$, $NSN_i$
+6. Appraisal Score: $AS_i = \frac{NSP_i + (1-NSN_i)}{2}$
 
-4. **Combined Dynamic Score**:
-   $$S_i^{dynamic} = \alpha \cdot \bar{s}_i + \beta \cdot \text{trajectory}_i + \gamma \cdot \text{stability}_i$$
-
-**Parameters:**
-- `temporal_discount`: Discount factor (default 0.95)
-- `trajectory_weight`: Weight for trajectory score (default 0.3)
-- `stability_weight`: Weight for stability score (default 0.2)
-
-**Code Location:** `src/mcdm/topsis.py` → `DynamicTOPSIS`
-
----
-
-### 2.3 VIKOR
-
-**Source:** Opricovic & Tzeng (2004)
-
-**Full Name:** VIseKriterijumska Optimizacija I Kompromisno Resenje (Serbian: Multicriteria Optimization and Compromise Solution)
-
-**Purpose:** Find compromise solutions that are closest to the ideal, balancing group utility (majority rule) and individual regret (minimum maximum regret).
-
-**Algorithm Steps:**
-
-1. **Determine best ($f_j^*$) and worst ($f_j^-$) values**:
-   - Benefit criteria: $f_j^* = \max_i(f_{ij})$, $f_j^- = \min_i(f_{ij})$
-   - Cost criteria: $f_j^* = \min_i(f_{ij})$, $f_j^- = \max_i(f_{ij})$
-
-2. **Calculate S (group utility)** - sum of normalized weighted distances:
-   $$S_i = \sum_{j=1}^{n} w_j \cdot \frac{f_j^* - f_{ij}}{f_j^* - f_j^-}$$
-
-3. **Calculate R (individual regret)** - maximum weighted distance:
-   $$R_i = \max_j \left[ w_j \cdot \frac{f_j^* - f_{ij}}{f_j^* - f_j^-} \right]$$
-
-4. **Calculate Q (compromise index)**:
-   $$Q_i = v \cdot \frac{S_i - S^*}{S^- - S^*} + (1-v) \cdot \frac{R_i - R^*}{R^- - R^*}$$
-   where $v$ is the weight of group utility strategy (default 0.5)
-
-5. **Rank by Q** (lower is better)
-
-6. **Check acceptance conditions**:
-   - **C1 (Acceptable Advantage)**: $Q(A^{(2)}) - Q(A^{(1)}) \geq \frac{1}{m-1}$
-   - **C2 (Acceptable Stability)**: $A^{(1)}$ is also best ranked by S or R
-
-**Parameter v Interpretation:**
-- $v = 0.5$: Consensus by majority
-- $v > 0.5$: Emphasis on group utility
-- $v < 0.5$: Emphasis on individual regret
-
-**Outputs:**
-- Three ranking lists: by Q (compromise), by S (utility), by R (regret)
-- Compromise solution identification
-- Acceptance condition verification
-
-**Code Location:** `src/mcdm/vikor.py` → `VIKORCalculator`
+**Code:** `src/mcdm/edas.py`
 
 ---
 
-### 2.4 Fuzzy TOPSIS
+## 4. Fuzzy MCDM Methods
 
-**Source:** Chen (2000), based on Zadeh (1965) Fuzzy Set Theory
+All fuzzy methods use **Triangular Fuzzy Numbers (TFN)** to represent uncertainty.
 
-**Purpose:** Handle uncertainty and imprecision in decision making using triangular fuzzy numbers.
+### 4.1 Triangular Fuzzy Numbers
 
-**Triangular Fuzzy Number (TFN):**
-A TFN $\tilde{A} = (l, m, u)$ represents:
+A TFN is represented as $\tilde{A} = (l, m, u)$ where:
 - $l$: Lower bound (pessimistic)
 - $m$: Modal value (most likely)
 - $u$: Upper bound (optimistic)
 
-**Fuzzy Number Generation from Panel Data:**
-Using temporal variance to capture uncertainty:
-$$\tilde{x}_{ij} = (\bar{x}_{ij} - k\sigma_{ij}, \bar{x}_{ij}, \bar{x}_{ij} + k\sigma_{ij})$$
-where $k$ is the spread factor (default 1.0)
-
-**Fuzzy Operations:**
-
-1. **Addition**: $(l_1, m_1, u_1) + (l_2, m_2, u_2) = (l_1+l_2, m_1+m_2, u_1+u_2)$
-
-2. **Scalar Multiplication**: $k \cdot (l, m, u) = (kl, km, ku)$ for $k \geq 0$
-
-3. **Vertex Distance**:
-   $$d(\tilde{A}, \tilde{B}) = \sqrt{\frac{(l_A-l_B)^2 + (m_A-m_B)^2 + (u_A-u_B)^2}{3}}$$
-
-**Defuzzification Methods:**
-- **Centroid** (default): $\frac{l + m + u}{3}$
-- **Mean of Maximum**: $m$
-- **Bisector**: $\frac{l + 2m + u}{4}$
-
-**Algorithm:**
-Similar to standard TOPSIS but using fuzzy arithmetic for all operations.
-
-**Code Location:** `src/mcdm/fuzzy_topsis.py` → `FuzzyTOPSIS`
-
----
-
-### 2.5 PROMETHEE
-
-**Source:** Brans & Vincke (1985)
-
-**Full Name:** Preference Ranking Organization METHod for Enrichment Evaluations
-
-**Type:** Outranking method
-
-**Purpose:** Rank alternatives through pairwise comparisons using preference functions. Unlike TOPSIS, PROMETHEE focuses on preference modeling rather than distance to ideal solutions.
-
-**Key Concepts:**
-- **Outranking**: Alternative $a$ outranks $b$ if $a$ is at least as good as $b$ on most criteria
-- **Preference Functions**: Model how differences between alternatives translate to preferences
-
-**Mathematical Formulation:**
-
-1. **Calculate preference degree** for each criterion $j$:
-   $$P_j(a, b) = F_j[d_j(a, b)]$$
-   where $d_j(a, b) = x_{aj} - x_{bj}$ and $F_j$ is the preference function
-
-2. **Aggregate preference index**:
-   $$\pi(a, b) = \sum_{j=1}^{n} w_j \cdot P_j(a, b)$$
-
-3. **Calculate outranking flows**:
-   - Positive (leaving) flow: $\Phi^+(a) = \frac{1}{m-1} \sum_{b \neq a} \pi(a, b)$
-   - Negative (entering) flow: $\Phi^-(a) = \frac{1}{m-1} \sum_{b \neq a} \pi(b, a)$
-   - Net flow: $\Phi(a) = \Phi^+(a) - \Phi^-(a)$
-
-**Preference Functions:**
-
-| Type | Name | Formula | Use Case |
-|------|------|---------|----------|
-| I | Usual | $P = 1$ if $d > 0$, else $0$ | Binary preference |
-| II | U-shape | $P = 1$ if $d > q$, else $0$ | Quasi-criterion |
-| III | V-shape | $P = d/p$ if $d < p$, else $1$ | Linear preference |
-| IV | Level | $P = 0.5$ if $q < d ≤ p$, else $0$ or $1$ | Step function |
-| V | V-shape-I | $P = (d-q)/(p-q)$ if $q < d < p$ | Linear with threshold |
-| VI | Gaussian | $P = 1 - e^{-d²/2σ²}$ | Smooth preference |
-
-**PROMETHEE I vs II:**
-- **PROMETHEE I**: Partial ranking (allows incomparability)
-- **PROMETHEE II**: Complete ranking based on net flow $\Phi$
-
-**Parameters:**
-- `preference_function`: Type of preference function (default "vshape")
-- `preference_threshold` (p): Strict preference threshold
-- `indifference_threshold` (q): No preference zone
-- `sigma`: For Gaussian function
-
-**Code Location:** `src/mcdm/promethee.py` → `PROMETHEECalculator`, `MultiPeriodPROMETHEE`
-
----
-
-### 2.6 COPRAS
-
-**Source:** Zavadskas & Kaklauskas (1996)
-
-**Full Name:** COmplex PRoportional ASsessment
-
-**Type:** Utility-based method
-
-**Purpose:** Evaluate alternatives by separately considering benefit and cost criteria with proportional dependence on criterion significance.
-
-**Advantages over TOPSIS:**
-- Simpler computation
-- Direct interpretation of utility degree (percentage)
-- Explicit separation of benefit and cost criteria
-
-**Mathematical Formulation:**
-
-1. **Normalize decision matrix** (sum normalization):
-   $$r_{ij} = \frac{x_{ij}}{\sum_{i=1}^{m} x_{ij}}$$
-
-2. **Apply weights**:
-   $$d_{ij} = r_{ij} \cdot w_j$$
-
-3. **Calculate sums for benefit ($S^+$) and cost ($S^-$) criteria**:
-   $$S_i^+ = \sum_{j \in \text{benefit}} d_{ij}$$
-   $$S_i^- = \sum_{j \in \text{cost}} d_{ij}$$
-
-4. **Calculate relative significance**:
-   $$Q_i = S_i^+ + \frac{S_{min}^- \cdot \sum_{i=1}^{m} S_i^-}{S_i^- \cdot \sum_{i=1}^{m} (S_{min}^- / S_i^-)}$$
-
-5. **Calculate utility degree** (percentage):
-   $$N_i = \frac{Q_i}{Q_{max}} \times 100\%$$
-
-**Interpretation:**
-- $N_i = 100\%$: Best alternative
-- Higher $N_i$: Better performance
-
-**Variants:**
-- **COPRAS-G**: Grey COPRAS for interval-valued uncertain data
-
-**Code Location:** `src/mcdm/copras.py` → `COPRASCalculator`, `MultiPeriodCOPRAS`, `COPRASGCalculator`
-
----
-
-### 2.7 EDAS
-
-**Source:** Keshavarz Ghorabaee et al. (2015)
-
-**Full Name:** Evaluation based on Distance from Average Solution
-
-**Type:** Distance-based method (using average solution)
-
-**Purpose:** Evaluate alternatives based on distance from the average solution rather than ideal solutions, making it more robust to outliers.
-
-**Key Difference from TOPSIS:**
-- TOPSIS uses ideal/anti-ideal solutions (extreme values)
-- EDAS uses average solution (central tendency)
-- More robust when data contains outliers
-
-**Mathematical Formulation:**
-
-1. **Calculate Average Solution (AV)** for each criterion:
-   $$AV_j = \frac{1}{m} \sum_{i=1}^{m} x_{ij}$$
-
-2. **Calculate Positive Distance from Average (PDA)**:
-   - For benefit criteria: $PDA_{ij} = \frac{\max(0, x_{ij} - AV_j)}{AV_j}$
-   - For cost criteria: $PDA_{ij} = \frac{\max(0, AV_j - x_{ij})}{AV_j}$
-
-3. **Calculate Negative Distance from Average (NDA)**:
-   - For benefit criteria: $NDA_{ij} = \frac{\max(0, AV_j - x_{ij})}{AV_j}$
-   - For cost criteria: $NDA_{ij} = \frac{\max(0, x_{ij} - AV_j)}{AV_j}$
-
-4. **Calculate weighted sums**:
-   $$SP_i = \sum_{j=1}^{n} w_j \cdot PDA_{ij}$$
-   $$SN_i = \sum_{j=1}^{n} w_j \cdot NDA_{ij}$$
-
-5. **Normalize**:
-   $$NSP_i = \frac{SP_i}{\max(SP)}$$
-   $$NSN_i = 1 - \frac{SN_i}{\max(SN)}$$
-
-6. **Calculate Appraisal Score**:
-   $$AS_i = \frac{NSP_i + NSN_i}{2}$$
-
-**Interpretation:**
-- Higher $AS$: Better alternative (closer to average in positive direction)
-- $AS$ ranges from 0 to 1
-
-**Variants:**
-- **Modified EDAS**: Uses trimmed mean or weighted average as reference
-
-**Panel Data Extension:**
-Multi-Period EDAS tracks how entities' distances from average evolve over time.
-
-**Code Location:** `src/mcdm/edas.py` → `EDASCalculator`, `MultiPeriodEDAS`, `ModifiedEDAS`
-
----
-
-## 3. Machine Learning Methods
-
-### 3.1 Panel Regression
-
-**Purpose:** Analyze relationships between criteria and outcomes while controlling for entity-specific and time-specific effects.
-
-**Model Types:**
-
-#### Fixed Effects (FE)
-Controls for time-invariant entity-specific characteristics.
-
-**Model:**
-$$y_{it} = \alpha_i + X_{it}\beta + \epsilon_{it}$$
-
-**Within Transformation:**
-$$y_{it} - \bar{y}_i = (X_{it} - \bar{X}_i)\beta + (\epsilon_{it} - \bar{\epsilon}_i)$$
-
-**Advantages:**
-- Controls for unobserved heterogeneity
-- Consistent when entity effects are correlated with regressors
-
-#### Random Effects (RE)
-Assumes entity effects are uncorrelated with regressors.
-
-**Model:**
-$$y_{it} = \alpha + X_{it}\beta + u_i + \epsilon_{it}$$
-
-**Estimation:** GLS (Generalized Least Squares)
-
-#### Pooled OLS
-Ignores panel structure, pools all observations.
-
-$$y_{it} = \alpha + X_{it}\beta + \epsilon_{it}$$
-
-**Parameters:**
-- `model_type`: 'fe' (Fixed Effects), 're' (Random Effects), or 'pooled'
-- `time_effects`: Include year fixed effects (default True)
-- `robust_se`: Use cluster-robust standard errors (default True)
-
-**Outputs:**
-- Coefficients with standard errors, t-statistics, p-values
-- R-squared (within for FE)
-- F-statistic
-- Entity fixed effects (for FE)
-
-**Code Location:** `src/ml/panel_regression.py` → `PanelRegression`
-
----
-
-### 3.2 Random Forest with Time-Series CV
-
-**Purpose:** Feature importance analysis and prediction with proper temporal validation to avoid data leakage.
-
-**Key Features:**
-
-#### Time-Series Cross-Validation
-Unlike standard k-fold CV, respects temporal ordering:
-```
-Fold 1: Train [2020, 2021] → Test [2022]
-Fold 2: Train [2020, 2021, 2022] → Test [2023]
-Fold 3: Train [2020, 2021, 2022, 2023] → Test [2024]
+**Arithmetic Operations:**
+- Addition: $(l_1+l_2, m_1+m_2, u_1+u_2)$
+- Multiplication: $(l_1 \cdot l_2, m_1 \cdot m_2, u_1 \cdot u_2)$
+- Division: $(l_1/u_2, m_1/m_2, u_1/l_2)$
+
+**Defuzzification (Centroid):**
+$$\text{defuzz}(\tilde{A}) = \frac{l + m + u}{3}$$
+
+### 4.2 Uncertainty from Panel Data
+
+Fuzzy numbers are created from panel data using temporal variance:
+
+```python
+# For each entity-criterion pair:
+m = last_year_value
+spread = std_over_years * spread_factor
+l = m - spread
+u = m + spread
 ```
 
-**Random Forest Parameters:**
-- `n_estimators`: Number of trees (default 200)
-- `max_depth`: Maximum tree depth (default 10)
-- `min_samples_split`: Minimum samples for split (default 5)
-- `min_samples_leaf`: Minimum samples in leaf (default 2)
-- `max_features`: Features per split (default 'sqrt')
+**Code:** `src/mcdm/fuzzy_base.py`
 
-**Feature Importance:**
-Based on Mean Decrease in Impurity (MDI):
-$$\text{importance}_j = \frac{1}{T} \sum_{t=1}^{T} \sum_{\text{node } v \text{ splits on } j} p(v) \cdot \Delta\text{impurity}(v)$$
+### 4.3 Fuzzy TOPSIS
 
-**Outputs:**
-- Feature importance ranking
-- CV scores (R², MSE, MAE)
-- Rank correlation between actual and predicted rankings
-- Test set predictions
+Extends TOPSIS with fuzzy arithmetic:
+1. Create fuzzy decision matrix from panel data
+2. Calculate fuzzy weighted matrix
+3. Determine fuzzy ideal and anti-ideal
+4. Calculate vertex distance to ideal/anti-ideal
+5. Compute closeness coefficient
 
-**Code Location:** `src/ml/random_forest_ts.py` → `RandomForestTS`
+**Code:** `src/mcdm/fuzzy_topsis.py`
 
----
+### 4.4 Fuzzy VIKOR
 
-### 3.3 LSTM Forecasting
+Extends VIKOR with fuzzy numbers:
+1. Create fuzzy decision matrix
+2. Calculate fuzzy S (group utility) and R (regret)
+3. Defuzzify and calculate Q
+4. Rank based on Q values
 
-**Purpose:** Predict future scores based on historical trajectories using Long Short-Term Memory neural networks.
+**Code:** `src/mcdm/fuzzy_vikor.py`
 
-**LSTM Architecture:**
+### 4.5 Fuzzy PROMETHEE
 
-LSTMs address the vanishing gradient problem in standard RNNs through gating mechanisms:
+Extends PROMETHEE with fuzzy preferences:
+1. Create fuzzy decision matrix
+2. Calculate fuzzy preference degrees
+3. Aggregate to fuzzy preference indices
+4. Calculate fuzzy positive/negative flows
+5. Defuzzify for final ranking
 
-1. **Forget Gate**: Decides what information to discard
-   $$f_t = \sigma(W_f \cdot [h_{t-1}, x_t] + b_f)$$
+**Code:** `src/mcdm/fuzzy_promethee.py`
 
-2. **Input Gate**: Decides what new information to store
-   $$i_t = \sigma(W_i \cdot [h_{t-1}, x_t] + b_i)$$
-   $$\tilde{C}_t = \tanh(W_C \cdot [h_{t-1}, x_t] + b_C)$$
+### 4.6 Fuzzy COPRAS
 
-3. **Cell State Update**:
-   $$C_t = f_t \cdot C_{t-1} + i_t \cdot \tilde{C}_t$$
+Extends COPRAS with fuzzy arithmetic:
+1. Create fuzzy decision matrix
+2. Calculate fuzzy S+ and S-
+3. Calculate fuzzy Q values
+4. Defuzzify for utility degree
 
-4. **Output Gate**:
-   $$o_t = \sigma(W_o \cdot [h_{t-1}, x_t] + b_o)$$
-   $$h_t = o_t \cdot \tanh(C_t)$$
+**Code:** `src/mcdm/fuzzy_copras.py`
 
-**Implementation Details:**
+### 4.7 Fuzzy EDAS
 
-The framework includes a simplified LSTM implementation using numpy for environments without PyTorch/TensorFlow:
-- Uses temporal feature aggregation (mean, last, trend, std, max, min)
-- Gradient descent training with L2 regularization
-- Adaptive learning rate decay
+Extends EDAS with fuzzy numbers:
+1. Create fuzzy decision matrix
+2. Calculate fuzzy average solution
+3. Calculate fuzzy PDA and NDA
+4. Compute fuzzy SP and SN
+5. Calculate appraisal score
 
-**Parameters:**
-- `sequence_length`: Input sequence length (default 3)
-- `hidden_units`: LSTM hidden size (default 64)
-- `epochs`: Training epochs (default 100)
-- `learning_rate`: Initial learning rate (default 0.001)
-- `patience`: Early stopping patience (default 15)
-
-**Outputs:**
-- Predictions for test year
-- Training/validation loss history
-- Test metrics (MSE, MAE, RMSE)
-- Rank correlation
-
-**Code Location:** `src/ml/lstm_forecast.py` → `LSTMForecaster`
+**Code:** `src/mcdm/fuzzy_edas.py`
 
 ---
 
-### 3.4 Rough Set Attribute Reduction
+## 5. Advanced ML Forecasting
 
-**Source:** Pawlak (1982)
+The ML forecasting system predicts **next year values** using all historical data.
 
-**Purpose:** Identify minimal subsets of attributes (reducts) that preserve the same classification ability as the full attribute set.
+### 5.1 Feature Engineering
 
-**Key Concepts:**
+**Temporal Features Created:**
+- Current values (t)
+- Lag features (t-1, t-2)
+- Rolling statistics (mean, std, min, max)
+- Momentum (rate of change)
+- Acceleration (change in momentum)
+- Trend (linear slope)
+- Cross-entity features (percentile rank, z-score)
 
-#### Indiscernibility Relation
-Objects $x$ and $y$ are indiscernible by attribute set $A$ if they have identical values for all attributes in $A$.
+**Code:** `src/ml/advanced_forecasting.py` → `TemporalFeatureEngineer`
 
-#### Lower Approximation
-Objects that can be certainly classified:
-$$\underline{A}X = \{x : [x]_A \subseteq X\}$$
+### 5.2 Model Ensemble
 
-#### Upper Approximation
-Objects that may possibly belong:
-$$\overline{A}X = \{x : [x]_A \cap X \neq \emptyset\}$$
+The system combines multiple models:
 
-#### Boundary Region
-Objects with uncertainty:
-$$BN_A(X) = \overline{A}X - \underline{A}X$$
+| Model | Type | Strength |
+|-------|------|----------|
+| Gradient Boosting | Tree | Handles non-linearity, robust to outliers |
+| Random Forest | Tree | Stable, interpretable |
+| Extra Trees | Tree | Diversity, fast |
+| Bayesian Ridge | Linear | Uncertainty quantification |
+| Huber Regression | Linear | Outlier robust |
+| Neural MLP | NN | Complex patterns |
+| Attention Model | NN | Temporal weighting |
 
-#### Core
-Attributes that cannot be removed without changing the classification:
-$$\text{CORE}(A) = \bigcap \text{RED}(A)$$
+### 5.3 Ensemble Weighting
 
-#### Reduct
-Minimal attribute subset with the same classification power as full set.
+Optimal weights are calculated based on cross-validation performance:
 
-**Quality of Approximation:**
-$$\gamma_A(D) = \frac{|\bigcup_{X \in U/D} \underline{A}X|}{|U|}$$
+$$w_m = \frac{\text{CV\_Score}_m^2}{\sum_{k} \text{CV\_Score}_k^2}$$
 
-**Algorithm:**
+### 5.4 Uncertainty Quantification
 
-1. **Discretize** continuous attributes into bins
-2. **Find Core** attributes (indispensable)
-3. **Find Reducts** using heuristic search
-4. **Select Best Reduct** meeting quality threshold
-5. **Identify Boundary Objects** with classification uncertainty
+Prediction intervals are calculated using:
+1. Bayesian Ridge posterior (if available)
+2. Model disagreement (ensemble spread)
 
-**Parameters:**
-- `quality_threshold`: Minimum acceptable quality (default 0.95)
-- `n_bins`: Discretization bins (default 5)
-- `max_reducts`: Maximum reducts to find (default 5)
-- `method`: 'heuristic' (fast) or 'exhaustive' (complete)
+$$\text{CI}_{95\%} = \hat{y} \pm 1.96 \cdot \sigma_{ensemble}$$
 
-**Outputs:**
-- Core attributes (indispensable)
-- All reducts found
-- Best reduct selection
-- Reduction rate
-- Quality measures
-- Boundary objects
+### 5.5 Usage Modes
 
-**Code Location:** `src/ml/rough_sets.py` → `RoughSetReducer`
+| Mode | Models | Speed | Accuracy |
+|------|--------|-------|----------|
+| fast | GB + Huber | ⚡⚡⚡ | ★★ |
+| balanced | GB + RF + BR + Huber + NN | ⚡⚡ | ★★★ |
+| accurate | All models | ⚡ | ★★★★ |
+| neural | RF + NN | ⚡⚡ | ★★★ |
+| ensemble | All models | ⚡ | ★★★★★ |
+
+**Code:** `src/ml/unified_forecasting.py`
 
 ---
 
-## 4. Ensemble Methods
+## 6. Pipeline Integration
 
-### 4.1 Stacking Meta-Learner
+### 6.1 Pipeline v2 Workflow
 
-**Purpose:** Combine predictions from multiple base models using a meta-learner for improved accuracy.
+```python
+from src.pipeline_v2 import PipelineV2
 
-**Architecture:**
+pipeline = PipelineV2(
+    output_dir="outputs",
+    ml_mode="balanced",
+    verbose=True
+)
+
+result = pipeline.run(panel_data)
+
+# Access results
+print(result.summary())
+
+# Traditional MCDM results
+for method, score in result.traditional_mcdm.items():
+    print(f"{method}: Top entity = {result.entities[score.rankings.argmin()]}")
+
+# Fuzzy MCDM results
+for method, score in result.fuzzy_mcdm.items():
+    print(f"{method}: Top entity = {result.entities[score.rankings.argmin()]}")
+
+# ML predictions
+if result.predicted_next_year is not None:
+    print(f"Predicted next year: {result.predicted_next_year}")
+
+# Final consensus ranking
+print(result.final_rankings.head(10))
+```
+
+### 6.2 Result Structure
 
 ```
-Level 0 (Base Models):
-├── TOPSIS Scores
-├── VIKOR Q Values
-├── Dynamic TOPSIS Scores
-├── Fuzzy TOPSIS Scores
-└── RF Predictions
-
-Level 1 (Meta-Learner):
-└── Ridge Regression → Final Predictions
+PipelineResultV2
+├── panel_data          # Original data
+├── traditional_mcdm    # Dict[method_name -> MCDMScore]
+├── fuzzy_mcdm          # Dict[method_name -> MCDMScore]
+├── weights             # Dict[method -> array]
+├── ml_forecast         # UnifiedForecastResult
+├── predicted_next_year # DataFrame
+├── prediction_uncertainty # DataFrame
+├── final_rankings      # DataFrame with consensus
+└── consensus_ranking   # Array of final ranks
 ```
 
-**Meta-Learner Options:**
-
-1. **Ridge Regression** (default):
-   $$\hat{\beta} = (X^TX + \alpha I)^{-1}X^Ty$$
-
-2. **Bayesian Ridge**: Iterative hyperparameter optimization
-
-3. **Elastic Net**: Combines L1 and L2 regularization
-
-4. **Linear OLS**: No regularization
-
-**Weight Constraints:**
-- Weights constrained to be non-negative
-- Normalized to sum to 1 for interpretability
-
-**Parameters:**
-- `meta_learner`: 'ridge', 'bayesian', 'elastic', or 'linear'
-- `cv_folds`: Cross-validation folds (default 5)
-- `alpha`: Regularization strength (default 1.0)
-- `use_features`: Include original features (default True)
-
-**Code Location:** `src/ensemble/stacking.py` → `StackingEnsemble`
-
 ---
 
-### 4.2 Borda Count
+## 7. References
 
-**Purpose:** Aggregate multiple rankings using positional voting.
-
-**Algorithm:**
-
-1. For each alternative $i$ and ranking method $m$:
-   $$\text{Borda}_i^m = n - \text{rank}_i^m$$
-   where $n$ is the number of alternatives
-
-2. Aggregate:
-   $$\text{Borda}_i = \sum_m w_m \cdot \text{Borda}_i^m$$
-
-3. Final ranking by Borda score (higher is better)
-
-**Properties:**
-- Simple and intuitive
-- Satisfies monotonicity
-- May not satisfy Condorcet criterion
-
-**Code Location:** `src/ensemble/aggregation.py` → `BordaCount`
-
----
-
-### 4.3 Copeland Method
-
-**Purpose:** Aggregate rankings based on pairwise comparisons.
-
-**Algorithm:**
-
-1. For each pair of alternatives $(i, j)$:
-   - Count methods where $i$ beats $j$: $W_{ij}$
-   - Count methods where $j$ beats $i$: $L_{ij}$
-
-2. Copeland score:
-   $$C_i = \sum_{j \neq i} (\text{sign}(W_{ij} - L_{ij}))$$
-
-3. Final ranking by Copeland score
-
-**Properties:**
-- Satisfies Condorcet criterion
-- Based on majority rule
-- More robust to extreme rankings
-
-**Kendall's W (Agreement Coefficient):**
-$$W = \frac{12S}{k^2(n^3-n)}$$
-where $S$ = sum of squared deviations from mean rank sum
-
-**Code Location:** `src/ensemble/aggregation.py` → `CopelandMethod`
-
----
-
-## 5. Analysis Methods
-
-### 5.1 Convergence Analysis
-
-**Purpose:** Test whether entities are converging (becoming more similar) over time.
-
-#### Beta (β) Convergence
-
-Tests if entities with lower initial scores grow faster (catch-up effect).
-
-**Regression:**
-$$\frac{1}{T} \ln\left(\frac{y_{i,T}}{y_{i,0}}\right) = \alpha + \beta \ln(y_{i,0}) + \epsilon_i$$
-
-**Interpretation:**
-- $\beta < 0$ and significant → Convergence (poor performers catching up)
-- $\beta \geq 0$ → No convergence or divergence
-
-**Convergence Speed:**
-$$\lambda = -\frac{\ln(1+\beta)}{T}$$
-
-**Half-Life** (years to halve the gap):
-$$\tau = \frac{\ln(2)}{\lambda}$$
-
-#### Sigma (σ) Convergence
-
-Tests if the dispersion of scores is decreasing over time.
-
-**Measure:**
-$$\sigma_t = \sqrt{\frac{1}{n-1} \sum_i (y_{it} - \bar{y}_t)^2}$$
-
-**Test:** Linear trend of $\sigma_t$ over time
-- Negative trend → Sigma convergence
-- Positive trend → Sigma divergence
-
-#### Club Convergence
-
-Tests if entities converge to different steady states (multiple equilibria).
-
-**Code Location:** `src/analysis/convergence.py` → `ConvergenceAnalysis`
-
----
-
-### 5.2 Sensitivity Analysis
-
-**Purpose:** Test the robustness of rankings to changes in weights and input uncertainty.
-
-**Methods:**
-
-#### Weight Sensitivity Index
-Measures how sensitive rankings are to changes in each criterion's weight:
-
-$$\text{Sensitivity}_j = \frac{1}{N} \sum_{i=1}^{N} |\text{rank}_i^{original} - \text{rank}_i^{w_j \pm \delta}|$$
-
-#### Monte Carlo Perturbation
-1. Generate $N$ perturbed weight vectors (default 1000)
-2. For each perturbation, calculate new rankings
-3. Analyze ranking distribution
-
-$$w_j^{perturbed} = w_j \cdot (1 + \epsilon_j)$$
-where $\epsilon_j \sim U(-\delta, \delta)$
-
-#### Critical Weight Ranges
-Find weight boundaries that maintain the same ranking:
-
-$$[w_j^{low}, w_j^{high}]$$ such that $\text{rank}_1 = \text{rank}_1^{original}$
-
-#### Top-N Stability
-Percentage of simulations where top N alternatives remain unchanged.
-
-**Parameters:**
-- `n_simulations`: Monte Carlo iterations (default 1000)
-- `perturbation_range`: Maximum perturbation (default 0.2 = ±20%)
-- `seed`: Random seed for reproducibility
-
-**Outputs:**
-- Weight sensitivity indices per criterion
-- Rank stability per alternative
-- Critical weight ranges
-- Overall robustness score (0-1)
-- Top-N stability metrics
-
-**Code Location:** `src/analysis/sensitivity.py` → `SensitivityAnalysis`
-
----
-
-## References
-
-1. Chen, C. T. (2000). Extensions of the TOPSIS for group decision-making under fuzzy environment. *Fuzzy Sets and Systems*, 114(1), 1-9.
-
-2. Diakoulaki, D., Mavrotas, G., & Papayannakis, L. (1995). Determining objective weights in multiple criteria problems: The CRITIC method. *Computers & Operations Research*, 22(7), 763-770.
-
-3. Hwang, C. L., & Yoon, K. (1981). *Multiple Attribute Decision Making: Methods and Applications*. Springer-Verlag.
-
-4. Opricovic, S., & Tzeng, G. H. (2004). Compromise solution by MCDM methods: A comparative analysis of VIKOR and TOPSIS. *European Journal of Operational Research*, 156(2), 445-455.
-
-5. Pawlak, Z. (1982). Rough sets. *International Journal of Computer & Information Sciences*, 11(5), 341-356.
-
-6. Shannon, C. E. (1948). A mathematical theory of communication. *Bell System Technical Journal*, 27(3), 379-423.
-
-7. Zadeh, L. A. (1965). Fuzzy sets. *Information and Control*, 8(3), 338-353.
+1. Hwang, C.L., & Yoon, K. (1981). Multiple Attribute Decision Making. Springer.
+2. Opricovic, S., & Tzeng, G.H. (2004). Compromise solution by MCDM methods. EJOR.
+3. Brans, J.P., & Vincke, P. (1985). A preference ranking organisation method. Management Science.
+4. Zavadskas, E.K., & Kaklauskas, A. (1996). Determination of a rational complex assessment. Statyba.
+5. Ghorabaee, M.K., et al. (2015). Multi-criteria inventory classification using EDAS method. JIEC.
+6. Chen, C.T. (2000). Extensions of the TOPSIS for group decision-making under fuzzy environment. FSS.

@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Weight Calculation Methods: Entropy, CRITIC, and Ensemble
-==========================================================
-"""
+"""Objective weight calculation methods: Entropy, CRITIC, and Ensemble."""
 
 import numpy as np
 import pandas as pd

@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Output Manager Module
-=====================
-
-Professional output management for ML-MCDM analysis results.
-Handles all file exports, report generation, and result organization.
-"""
+"""Output management for analysis results, reports, and file exports."""
 
 import numpy as np
 import pandas as pd
@@ -481,7 +475,8 @@ class OutputManager:
                                        ml_results: Dict[str, Any],
                                        ensemble_results: Dict[str, Any],
                                        analysis_results: Dict[str, Any],
-                                       execution_time: float) -> str:
+                                       execution_time: float,
+                                       future_predictions: Optional[Dict[str, Any]] = None) -> str:
         """
         Generate comprehensive analysis report.
         
@@ -690,9 +685,64 @@ class OutputManager:
             for i, (crit, val) in enumerate(sorted_sens):
                 report_lines.append(f"      {i+1}. {crit}: {val:.6f}")
         
-        # 7. CONCLUSIONS
+        # 7. FUTURE PREDICTIONS
+        if future_predictions:
+            report_lines.append("\n" + "=" * 80)
+            report_lines.append("7. FUTURE YEAR PREDICTIONS")
+            report_lines.append("=" * 80)
+            
+            pred_year = future_predictions.get('prediction_year', 'Next Year')
+            training_years = future_predictions.get('training_years', [])
+            
+            report_lines.append(f"\n  Prediction Year: {pred_year}")
+            report_lines.append(f"  Training Data: {min(training_years)}-{max(training_years)} ({len(training_years)} years)")
+            
+            # Helper to convert to numpy
+            def to_array(x):
+                if hasattr(x, 'values'):
+                    return x.values
+                return np.array(x) if not isinstance(x, np.ndarray) else x
+            
+            pred_scores = to_array(future_predictions['topsis_scores'])
+            pred_ranks = to_array(future_predictions['topsis_rankings'])
+            
+            report_lines.append(f"\n  7.1 Predicted TOPSIS Scores")
+            report_lines.append(f"    Score Range: [{pred_scores.min():.6f}, {pred_scores.max():.6f}]")
+            report_lines.append(f"    Score Mean: {pred_scores.mean():.6f}")
+            report_lines.append(f"    Score Std: {pred_scores.std():.6f}")
+            
+            report_lines.append(f"\n    Predicted Top 10 Rankings for {pred_year}:")
+            top_idx = np.argsort(pred_ranks)[:10]
+            for i, idx in enumerate(top_idx):
+                entity = panel_data.entities[idx]
+                score = pred_scores[idx]
+                report_lines.append(f"      {i+1}. {entity}: Score={score:.6f}")
+            
+            # VIKOR predictions
+            if 'vikor' in future_predictions:
+                vikor = future_predictions['vikor']
+                report_lines.append(f"\n  7.2 Predicted VIKOR Analysis")
+                report_lines.append(f"    Q Value Range: [{to_array(vikor['Q']).min():.6f}, {to_array(vikor['Q']).max():.6f}]")
+                
+                vikor_ranks = to_array(vikor['rankings'])
+                top_vikor_idx = np.argsort(vikor_ranks)[:5]
+                report_lines.append(f"\n    Predicted VIKOR Top 5 for {pred_year}:")
+                for i, idx in enumerate(top_vikor_idx):
+                    entity = panel_data.entities[idx]
+                    q_val = to_array(vikor['Q'])[idx]
+                    report_lines.append(f"      {i+1}. {entity}: Q={q_val:.6f}")
+            
+            # Model contributions
+            model_contrib = future_predictions.get('model_contributions', {})
+            if model_contrib:
+                report_lines.append(f"\n  7.3 Forecast Model Contributions")
+                sorted_models = sorted(model_contrib.items(), key=lambda x: x[1], reverse=True)
+                for model, weight in sorted_models[:5]:
+                    report_lines.append(f"    {model}: {weight:.4f}")
+        
+        # 8. CONCLUSIONS
         report_lines.append("\n" + "=" * 80)
-        report_lines.append("7. KEY FINDINGS AND CONCLUSIONS")
+        report_lines.append("8. KEY FINDINGS AND CONCLUSIONS" if future_predictions else "7. KEY FINDINGS AND CONCLUSIONS")
         report_lines.append("=" * 80)
         
         # Top performer
@@ -702,8 +752,16 @@ class OutputManager:
             final_ranking = np.array(agg.final_ranking) if hasattr(agg.final_ranking, 'values') else np.array(agg.final_ranking)
             final_scores = np.array(agg.final_scores) if hasattr(agg.final_scores, 'values') else np.array(agg.final_scores)
             best_idx = np.argmin(final_ranking)
-            report_lines.append(f"\n  • Top Performer: {panel_data.entities[best_idx]}")
+            report_lines.append(f"\n  • Current Top Performer ({max(panel_data.years)}): {panel_data.entities[best_idx]}")
             report_lines.append(f"    Final Score: {final_scores[best_idx]:.6f}")
+        
+        # Predicted top performer
+        if future_predictions:
+            pred_scores = to_array(future_predictions['topsis_scores'])
+            pred_year = future_predictions.get('prediction_year', 'Next Year')
+            best_pred_idx = np.argmax(pred_scores)
+            report_lines.append(f"\n  • Predicted Top Performer ({pred_year}): {panel_data.entities[best_pred_idx]}")
+            report_lines.append(f"    Predicted Score: {pred_scores[best_pred_idx]:.6f}")
         
         # Method agreement
         if ensemble_results.get('aggregated'):
@@ -741,6 +799,128 @@ class OutputManager:
         
         return str(path)
     
+    def save_future_predictions(self, future_predictions: Dict[str, Any],
+                                panel_data: Any) -> Dict[str, str]:
+        """
+        Save predicted future year (2025) results.
+        
+        Parameters
+        ----------
+        future_predictions : Dict
+            Future prediction results including predicted components and MCDM scores
+        panel_data : PanelData
+            Panel data object
+        
+        Returns
+        -------
+        Dict[str, str]
+            Paths to saved files
+        """
+        saved_files = {}
+        prediction_year = future_predictions.get('prediction_year', 2025)
+        
+        # Helper to convert to numpy
+        def to_array(x):
+            if hasattr(x, 'values'):
+                return x.values
+            return np.array(x) if not isinstance(x, np.ndarray) else x
+        
+        # 1. Save predicted rankings for future year
+        entities = panel_data.entities
+        
+        rankings_df = pd.DataFrame({
+            'Rank': range(1, len(entities) + 1),
+            'Entity': entities,
+            'Predicted_TOPSIS_Score': to_array(future_predictions['topsis_scores']),
+            'Predicted_TOPSIS_Rank': to_array(future_predictions['topsis_rankings']),
+            'Predicted_VIKOR_Q': to_array(future_predictions['vikor']['Q']),
+            'Predicted_VIKOR_S': to_array(future_predictions['vikor']['S']),
+            'Predicted_VIKOR_R': to_array(future_predictions['vikor']['R']),
+            'Predicted_VIKOR_Rank': to_array(future_predictions['vikor']['rankings']),
+            'Prediction_Year': prediction_year
+        })
+        
+        # Sort by predicted TOPSIS rank
+        rankings_df = rankings_df.sort_values('Predicted_TOPSIS_Rank').reset_index(drop=True)
+        rankings_df['Rank'] = range(1, len(rankings_df) + 1)
+        
+        path = self.results_dir / f'predicted_rankings_{prediction_year}.csv'
+        rankings_df.to_csv(path, index=False, float_format='%.6f')
+        saved_files['predicted_rankings'] = str(path)
+        
+        # 2. Save predicted component values
+        predicted_components = future_predictions.get('predicted_components')
+        if predicted_components is not None:
+            if isinstance(predicted_components, pd.DataFrame):
+                comp_df = predicted_components.copy()
+                comp_df.insert(0, 'Entity', comp_df.index)
+                comp_df = comp_df.reset_index(drop=True)
+            else:
+                comp_df = pd.DataFrame(
+                    predicted_components,
+                    index=entities,
+                    columns=panel_data.components
+                )
+                comp_df.insert(0, 'Entity', comp_df.index)
+                comp_df = comp_df.reset_index(drop=True)
+            
+            comp_df['Prediction_Year'] = prediction_year
+            
+            path = self.results_dir / f'predicted_components_{prediction_year}.csv'
+            comp_df.to_csv(path, index=False, float_format='%.6f')
+            saved_files['predicted_components'] = str(path)
+        
+        # 3. Save prediction uncertainty if available
+        uncertainty = future_predictions.get('prediction_uncertainty')
+        if uncertainty is not None:
+            if isinstance(uncertainty, pd.DataFrame):
+                unc_df = uncertainty.copy()
+                unc_df.insert(0, 'Entity', unc_df.index)
+                unc_df = unc_df.reset_index(drop=True)
+            else:
+                unc_df = pd.DataFrame(
+                    uncertainty,
+                    index=entities,
+                    columns=panel_data.components
+                )
+                unc_df.insert(0, 'Entity', unc_df.index)
+                unc_df = unc_df.reset_index(drop=True)
+            
+            path = self.results_dir / f'prediction_uncertainty_{prediction_year}.csv'
+            unc_df.to_csv(path, index=False, float_format='%.6f')
+            saved_files['prediction_uncertainty'] = str(path)
+        
+        # 4. Save model contributions
+        model_contributions = future_predictions.get('model_contributions', {})
+        if model_contributions:
+            contrib_df = pd.DataFrame([
+                {'Model': k, 'Weight': v}
+                for k, v in sorted(model_contributions.items(), 
+                                   key=lambda x: x[1], reverse=True)
+            ])
+            path = self.results_dir / f'forecast_model_weights_{prediction_year}.csv'
+            contrib_df.to_csv(path, index=False, float_format='%.6f')
+            saved_files['model_weights'] = str(path)
+        
+        # 5. Save forecast summary
+        summary = {
+            'prediction_year': prediction_year,
+            'training_years': future_predictions.get('training_years', []),
+            'n_entities': len(entities),
+            'n_components': len(panel_data.components),
+            'top_predicted_entity': entities[np.argmax(to_array(future_predictions['topsis_scores']))],
+            'top_predicted_score': float(np.max(to_array(future_predictions['topsis_scores']))),
+            'mean_predicted_score': float(np.mean(to_array(future_predictions['topsis_scores']))),
+            'model_contributions': model_contributions
+        }
+        
+        path = self.results_dir / f'forecast_summary_{prediction_year}.json'
+        with open(path, 'w') as f:
+            json.dump(summary, f, indent=2, default=str)
+        saved_files['forecast_summary'] = str(path)
+        
+        return saved_files
+    
     def save_all_results(self,
                          panel_data: Any,
                          weights: Dict[str, np.ndarray],
@@ -748,7 +928,8 @@ class OutputManager:
                          ml_results: Dict[str, Any],
                          ensemble_results: Dict[str, Any],
                          analysis_results: Dict[str, Any],
-                         execution_time: float) -> Dict[str, Any]:
+                         execution_time: float,
+                         future_predictions: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Save all analysis results in organized structure with robust error handling.
         
@@ -798,11 +979,19 @@ class OutputManager:
         else:
             saved_files['files']['analysis_results'] = {'status': 'skipped - no analysis results'}
         
+        # Future predictions (2025)
+        if future_predictions:
+            safe_save('future_predictions', self.save_future_predictions, 
+                      future_predictions, panel_data)
+        else:
+            saved_files['files']['future_predictions'] = {'status': 'skipped - no future predictions'}
+        
         safe_save('data_summary', self.save_panel_data_summary, panel_data)
         
         safe_save('report', self.generate_comprehensive_report,
                   panel_data, weights, mcdm_results, ml_results,
-                  ensemble_results, analysis_results, execution_time)
+                  ensemble_results, analysis_results, execution_time,
+                  future_predictions)
         
         # Save manifest
         try:

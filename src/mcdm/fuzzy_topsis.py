@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Fuzzy TOPSIS Implementation
-============================
-
-Type-1 Fuzzy TOPSIS with triangular fuzzy numbers.
-Supports automatic fuzzy number generation from temporal variance.
-"""
+"""Fuzzy TOPSIS with triangular fuzzy numbers."""
 
 import numpy as np
 import pandas as pd

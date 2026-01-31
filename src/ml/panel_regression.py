@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Panel Regression Module
-========================
-
-Fixed Effects, Random Effects, and Pooled OLS for panel data analysis.
-"""
+"""Panel regression: Fixed Effects, Random Effects, and Pooled OLS."""
 
 import numpy as np
 import pandas as pd

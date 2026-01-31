@@ -1,22 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-EDAS Implementation
-====================
-
-EDAS (Evaluation based on Distance from Average Solution)
-MCDM method based on distance from average solution rather than ideal solutions.
-
-Advantages over TOPSIS:
-- Uses average solution (more robust to outliers)
-- Separate positive/negative distances for comprehensive evaluation
-- Better handling of criteria with different scales
-- Simpler computation while maintaining accuracy
-
-Features:
-- Standard EDAS for cross-sectional data
-- Multi-Period EDAS for panel data
-- EDAS with interval/uncertain data support
-"""
+"""EDAS: Evaluation based on Distance from Average Solution."""
 
 import numpy as np
 import pandas as pd
