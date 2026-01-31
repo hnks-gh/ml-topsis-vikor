@@ -15,6 +15,9 @@ This document provides detailed descriptions of all methods implemented in the M
    - [Dynamic TOPSIS](#22-dynamic-topsis)
    - [VIKOR](#23-vikor)
    - [Fuzzy TOPSIS](#24-fuzzy-topsis)
+   - [PROMETHEE](#25-promethee)
+   - [COPRAS](#26-copras)
+   - [EDAS](#27-edas)
 3. [Machine Learning Methods](#3-machine-learning-methods)
    - [Panel Regression](#31-panel-regression)
    - [Random Forest with Time-Series CV](#32-random-forest-with-time-series-cv)
@@ -274,6 +277,156 @@ where $k$ is the spread factor (default 1.0)
 Similar to standard TOPSIS but using fuzzy arithmetic for all operations.
 
 **Code Location:** `src/mcdm/fuzzy_topsis.py` → `FuzzyTOPSIS`
+
+---
+
+### 2.5 PROMETHEE
+
+**Source:** Brans & Vincke (1985)
+
+**Full Name:** Preference Ranking Organization METHod for Enrichment Evaluations
+
+**Type:** Outranking method
+
+**Purpose:** Rank alternatives through pairwise comparisons using preference functions. Unlike TOPSIS, PROMETHEE focuses on preference modeling rather than distance to ideal solutions.
+
+**Key Concepts:**
+- **Outranking**: Alternative $a$ outranks $b$ if $a$ is at least as good as $b$ on most criteria
+- **Preference Functions**: Model how differences between alternatives translate to preferences
+
+**Mathematical Formulation:**
+
+1. **Calculate preference degree** for each criterion $j$:
+   $$P_j(a, b) = F_j[d_j(a, b)]$$
+   where $d_j(a, b) = x_{aj} - x_{bj}$ and $F_j$ is the preference function
+
+2. **Aggregate preference index**:
+   $$\pi(a, b) = \sum_{j=1}^{n} w_j \cdot P_j(a, b)$$
+
+3. **Calculate outranking flows**:
+   - Positive (leaving) flow: $\Phi^+(a) = \frac{1}{m-1} \sum_{b \neq a} \pi(a, b)$
+   - Negative (entering) flow: $\Phi^-(a) = \frac{1}{m-1} \sum_{b \neq a} \pi(b, a)$
+   - Net flow: $\Phi(a) = \Phi^+(a) - \Phi^-(a)$
+
+**Preference Functions:**
+
+| Type | Name | Formula | Use Case |
+|------|------|---------|----------|
+| I | Usual | $P = 1$ if $d > 0$, else $0$ | Binary preference |
+| II | U-shape | $P = 1$ if $d > q$, else $0$ | Quasi-criterion |
+| III | V-shape | $P = d/p$ if $d < p$, else $1$ | Linear preference |
+| IV | Level | $P = 0.5$ if $q < d ≤ p$, else $0$ or $1$ | Step function |
+| V | V-shape-I | $P = (d-q)/(p-q)$ if $q < d < p$ | Linear with threshold |
+| VI | Gaussian | $P = 1 - e^{-d²/2σ²}$ | Smooth preference |
+
+**PROMETHEE I vs II:**
+- **PROMETHEE I**: Partial ranking (allows incomparability)
+- **PROMETHEE II**: Complete ranking based on net flow $\Phi$
+
+**Parameters:**
+- `preference_function`: Type of preference function (default "vshape")
+- `preference_threshold` (p): Strict preference threshold
+- `indifference_threshold` (q): No preference zone
+- `sigma`: For Gaussian function
+
+**Code Location:** `src/mcdm/promethee.py` → `PROMETHEECalculator`, `MultiPeriodPROMETHEE`
+
+---
+
+### 2.6 COPRAS
+
+**Source:** Zavadskas & Kaklauskas (1996)
+
+**Full Name:** COmplex PRoportional ASsessment
+
+**Type:** Utility-based method
+
+**Purpose:** Evaluate alternatives by separately considering benefit and cost criteria with proportional dependence on criterion significance.
+
+**Advantages over TOPSIS:**
+- Simpler computation
+- Direct interpretation of utility degree (percentage)
+- Explicit separation of benefit and cost criteria
+
+**Mathematical Formulation:**
+
+1. **Normalize decision matrix** (sum normalization):
+   $$r_{ij} = \frac{x_{ij}}{\sum_{i=1}^{m} x_{ij}}$$
+
+2. **Apply weights**:
+   $$d_{ij} = r_{ij} \cdot w_j$$
+
+3. **Calculate sums for benefit ($S^+$) and cost ($S^-$) criteria**:
+   $$S_i^+ = \sum_{j \in \text{benefit}} d_{ij}$$
+   $$S_i^- = \sum_{j \in \text{cost}} d_{ij}$$
+
+4. **Calculate relative significance**:
+   $$Q_i = S_i^+ + \frac{S_{min}^- \cdot \sum_{i=1}^{m} S_i^-}{S_i^- \cdot \sum_{i=1}^{m} (S_{min}^- / S_i^-)}$$
+
+5. **Calculate utility degree** (percentage):
+   $$N_i = \frac{Q_i}{Q_{max}} \times 100\%$$
+
+**Interpretation:**
+- $N_i = 100\%$: Best alternative
+- Higher $N_i$: Better performance
+
+**Variants:**
+- **COPRAS-G**: Grey COPRAS for interval-valued uncertain data
+
+**Code Location:** `src/mcdm/copras.py` → `COPRASCalculator`, `MultiPeriodCOPRAS`, `COPRASGCalculator`
+
+---
+
+### 2.7 EDAS
+
+**Source:** Keshavarz Ghorabaee et al. (2015)
+
+**Full Name:** Evaluation based on Distance from Average Solution
+
+**Type:** Distance-based method (using average solution)
+
+**Purpose:** Evaluate alternatives based on distance from the average solution rather than ideal solutions, making it more robust to outliers.
+
+**Key Difference from TOPSIS:**
+- TOPSIS uses ideal/anti-ideal solutions (extreme values)
+- EDAS uses average solution (central tendency)
+- More robust when data contains outliers
+
+**Mathematical Formulation:**
+
+1. **Calculate Average Solution (AV)** for each criterion:
+   $$AV_j = \frac{1}{m} \sum_{i=1}^{m} x_{ij}$$
+
+2. **Calculate Positive Distance from Average (PDA)**:
+   - For benefit criteria: $PDA_{ij} = \frac{\max(0, x_{ij} - AV_j)}{AV_j}$
+   - For cost criteria: $PDA_{ij} = \frac{\max(0, AV_j - x_{ij})}{AV_j}$
+
+3. **Calculate Negative Distance from Average (NDA)**:
+   - For benefit criteria: $NDA_{ij} = \frac{\max(0, AV_j - x_{ij})}{AV_j}$
+   - For cost criteria: $NDA_{ij} = \frac{\max(0, x_{ij} - AV_j)}{AV_j}$
+
+4. **Calculate weighted sums**:
+   $$SP_i = \sum_{j=1}^{n} w_j \cdot PDA_{ij}$$
+   $$SN_i = \sum_{j=1}^{n} w_j \cdot NDA_{ij}$$
+
+5. **Normalize**:
+   $$NSP_i = \frac{SP_i}{\max(SP)}$$
+   $$NSN_i = 1 - \frac{SN_i}{\max(SN)}$$
+
+6. **Calculate Appraisal Score**:
+   $$AS_i = \frac{NSP_i + NSN_i}{2}$$
+
+**Interpretation:**
+- Higher $AS$: Better alternative (closer to average in positive direction)
+- $AS$ ranges from 0 to 1
+
+**Variants:**
+- **Modified EDAS**: Uses trimmed mean or weighted average as reference
+
+**Panel Data Extension:**
+Multi-Period EDAS tracks how entities' distances from average evolve over time.
+
+**Code Location:** `src/mcdm/edas.py` → `EDASCalculator`, `MultiPeriodEDAS`, `ModifiedEDAS`
 
 ---
 

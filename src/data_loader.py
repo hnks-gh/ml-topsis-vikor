@@ -105,6 +105,29 @@ class PanelDataLoader:
         
         return panel_data
     
+    def load_from_dataframe(self, df: pd.DataFrame) -> PanelData:
+        """Load panel data from an existing DataFrame.
+        
+        Parameters:
+            df: DataFrame with Year, Province, and component columns
+            
+        Returns:
+            PanelData object
+        """
+        self.logger.info("Loading panel data from DataFrame")
+        
+        # Validate and process
+        df = self._validate_structure(df.copy())
+        df = self._preprocess(df)
+        
+        # Create multiple views
+        panel_data = self._create_views(df)
+        
+        self.logger.info(f"✓ Loaded: {panel_data.n_provinces} provinces, "
+                        f"{panel_data.n_years} years, {panel_data.n_components} components")
+        
+        return panel_data
+    
     def _validate_structure(self, df: pd.DataFrame) -> pd.DataFrame:
         """Validate panel data structure."""
         required_cols = [self._panel_config.year_col, self._panel_config.province_col]

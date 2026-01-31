@@ -9,26 +9,39 @@ A comprehensive framework combining **Multi-Criteria Decision Making (MCDM)** me
 
 ML-MCDM provides an integrated econometric-ML hybrid approach for multi-criteria decision making with panel data. The framework is designed for analyzing entities (e.g., provinces, companies, countries) across multiple time periods and criteria.
 
+### Architecture (v2.0)
+
+```
+Panel Data (Multiple Years)
+    │
+    ├── Last Year Data ─────────┬──► Traditional MCDM (5 methods)
+    │                           │
+    │   Temporal Variance ──────┴──► Fuzzy MCDM (5 methods)
+    │
+    └── All Historical Data ───────► ML Forecasting ──► Next Year Predictions
+```
+
 ### Key Capabilities
 
-- **Multiple MCDM Methods**: TOPSIS, Dynamic TOPSIS, VIKOR, Fuzzy TOPSIS
+- **MCDM Methods (Traditional + Fuzzy)**: TOPSIS, VIKOR, PROMETHEE, COPRAS, EDAS
 - **Objective Weighting**: Entropy weights, CRITIC weights, Ensemble weighting
-- **Machine Learning**: Panel Regression (FE/RE), Random Forest with time-series CV, LSTM forecasting, Rough Set attribute reduction
-- **Ensemble Methods**: Stacking meta-learning, Borda Count, Copeland rank aggregation
+- **Advanced ML Forecasting**: Gradient Boosting, Random Forest, Neural Networks, Attention models
+- **Machine Learning**: Panel Regression (FE/RE), LSTM forecasting, Rough Set attribute reduction
+- **Ensemble Methods**: Stacking meta-learning, Borda Count rank aggregation
 - **Advanced Analysis**: Beta/Sigma convergence analysis, Monte Carlo sensitivity analysis
 - **Comprehensive Outputs**: High-resolution visualizations, CSV results, detailed reports
 
 ## Features
 
 - ✅ Panel data support (entities × time periods × criteria)
+- ✅ **10 MCDM methods** (5 traditional + 5 fuzzy)
 - ✅ Multiple objective weighting methods (Entropy, CRITIC, Ensemble)
-- ✅ Four MCDM methods with automatic rank aggregation
-- ✅ ML-based validation and feature importance analysis
-- ✅ Time-series forecasting with LSTM neural networks
-- ✅ Dimensionality reduction with Rough Set Theory
+- ✅ **State-of-the-art ML forecasting** for next year prediction
+- ✅ Uncertainty quantification with prediction intervals
+- ✅ Time-series cross-validation for robust evaluation
+- ✅ Feature importance and interpretability
 - ✅ Convergence and sensitivity analysis
 - ✅ Professional high-resolution visualizations (300 DPI)
-- ✅ Automated comprehensive report generation
 - ✅ Production-ready with full error handling
 
 ## Installation
@@ -67,7 +80,8 @@ ML-MCDM/
 ├── README.md               # This file
 │
 ├── src/                    # Source code
-│   ├── main.py             # Pipeline orchestrator (MLTOPSISPipeline)
+│   ├── main.py             # Pipeline orchestrator (legacy v1)
+│   ├── pipeline_v2.py      # New v2 pipeline (recommended)
 │   ├── config.py           # Configuration dataclasses
 │   ├── data_loader.py      # Data loading and preprocessing
 │   ├── logger.py           # Logging utilities
@@ -75,9 +89,17 @@ ML-MCDM/
 │   ├── visualization.py    # Visualization generators
 │   │
 │   ├── mcdm/               # Multi-Criteria Decision Making methods
-│   │   ├── topsis.py       # TOPSIS and Dynamic TOPSIS
-│   │   ├── vikor.py        # VIKOR method
-│   │   ├── fuzzy_topsis.py # Fuzzy TOPSIS with triangular numbers
+│   │   ├── topsis.py       # TOPSIS (Traditional)
+│   │   ├── vikor.py        # VIKOR (Traditional)
+│   │   ├── promethee.py    # PROMETHEE (Traditional)
+│   │   ├── copras.py       # COPRAS (Traditional)
+│   │   ├── edas.py         # EDAS (Traditional)
+│   │   ├── fuzzy_base.py   # Triangular Fuzzy Number base classes
+│   │   ├── fuzzy_topsis.py # Fuzzy TOPSIS
+│   │   ├── fuzzy_vikor.py  # Fuzzy VIKOR
+│   │   ├── fuzzy_promethee.py # Fuzzy PROMETHEE
+│   │   ├── fuzzy_copras.py # Fuzzy COPRAS
+│   │   ├── fuzzy_edas.py   # Fuzzy EDAS
 │   │   └── weights.py      # Entropy, CRITIC, Ensemble weights
 │   │
 │   ├── ml/                 # Machine Learning methods
@@ -169,6 +191,70 @@ print(f"Execution time: {result.execution_time:.2f}s")
 # Get ranking DataFrame
 rankings = result.get_final_ranking_df()
 print(rankings.head(10))
+```
+
+### Using Pipeline v2 (Recommended)
+
+The v2 pipeline provides cleaner separation between Traditional MCDM, Fuzzy MCDM, and ML Forecasting:
+
+```python
+from src.pipeline_v2 import PipelineV2, run_pipeline_v2
+from src.data_loader import PanelDataLoader
+
+# Load data
+loader = PanelDataLoader()
+panel_data = loader.load('data/data.csv')
+
+# Run v2 pipeline
+pipeline = PipelineV2(
+    output_dir="outputs",
+    ml_mode="balanced",  # 'fast', 'balanced', 'accurate', 'neural', 'ensemble'
+    verbose=True
+)
+result = pipeline.run(panel_data)
+
+# Print summary
+print(result.summary())
+
+# Access Traditional MCDM results
+for method, score in result.traditional_mcdm.items():
+    top_idx = score.rankings.argmin()
+    print(f"{method}: Top = {result.entities[top_idx]}")
+
+# Access Fuzzy MCDM results
+for method, score in result.fuzzy_mcdm.items():
+    top_idx = score.rankings.argmin()
+    print(f"{method}: Top = {result.entities[top_idx]}")
+
+# ML Forecasted next year values
+if result.predicted_next_year is not None:
+    print(result.predicted_next_year.head())
+
+# Final consensus ranking
+print(result.final_rankings.head(10))
+```
+
+### Direct ML Forecasting
+
+For advanced ML forecasting without the full pipeline:
+
+```python
+from src.ml import UnifiedForecaster, ForecastMode
+
+# Create forecaster
+forecaster = UnifiedForecaster(
+    mode=ForecastMode.BALANCED,
+    include_neural=True,
+    verbose=True
+)
+
+# Generate predictions
+result = forecaster.forecast(panel_data)
+
+# View results
+print(result.get_summary())
+print(f"Predictions: {result.predictions}")
+print(f"Model weights: {result.model_contributions}")
 ```
 
 ## Input Data Format
