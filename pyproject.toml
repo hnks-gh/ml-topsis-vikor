@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ML-MCDM"
+version = "2.0.0"
+description = "ML-Enhanced TOPSIS Framework for Panel Data Multi-Criteria Decision Analysis"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "ML-MCDM Development Team"}
+]
+keywords = [
+    "TOPSIS",
+    "MCDM",
+    "multi-criteria decision making",
+    "panel data",
+    "machine learning",
+    "sustainability assessment"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = [
+    "numpy>=1.21.0,<2.0.0",
+    "pandas>=1.3.0,<2.1.0",
+    "scipy>=1.7.0,<2.0.0",
+    "scikit-learn>=1.0.0,<2.0.0",
+    "matplotlib>=3.4.0,<4.0.0",
+    "seaborn>=0.11.0,<0.14.0",
+    "tqdm>=4.62.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.0.0",
+    "flake8>=5.0.0",
+    "mypy>=0.990",
+]
+full = [
+    "shap>=0.40.0",
+    "factor-analyzer>=0.4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ML-MCDM/ML-MCDM"
+Documentation = "https://github.com/ML-MCDM/ML-MCDM#readme"
+Repository = "https://github.com/ML-MCDM/ML-MCDM"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.csv"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
