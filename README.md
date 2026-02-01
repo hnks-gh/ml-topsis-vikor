@@ -1,15 +1,13 @@
-# ML-MCDM
+# ML-MCDM Framework v2.0
 
-Machine Learning enhanced Multi-Criteria Decision Making for panel data analysis.
+Machine Learning Enhanced Multi-Criteria Decision Making with Multiple Methods for Panel Data Analysis.
 
 ## Overview
 
-This framework integrates **MCDM methods** with **Machine Learning** to rank entities (provinces, companies, etc.) across multiple time periods and criteria. It combines traditional decision-making techniques with predictive modeling for comprehensive analysis.
-
-### Technical Approach
+This framework integrates **10 MCDM methods** (5 traditional + 5 fuzzy variants) with **advanced Machine Learning** to rank entities (provinces) across multiple time periods and criteria. It combines multiple decision-making techniques with ensemble forecasting for comprehensive analysis and robust future predictions.
 
 ```
-Panel Data (entities × time × criteria)
+Panel Data (64 provinces × 5 years × 20 criteria)
          │
          ├─► Weight Calculation (Entropy, CRITIC, Ensemble)
          │
@@ -17,11 +15,9 @@ Panel Data (entities × time × criteria)
          │     ├─ Traditional: TOPSIS, VIKOR, PROMETHEE, COPRAS, EDAS
          │     └─ Fuzzy: Handles uncertainty via triangular fuzzy numbers
          │
-         ├─► ML Analysis
-         │     ├─ Panel Regression (Fixed/Random Effects)
-         │     ├─ Random Forest with Time-Series CV
-         │     ├─ Gradient Boosting Ensemble
-         │     └─ Neural Networks with Attention
+         ├─► ML Analysis (Random Forest with Time-Series CV)
+         │     ├─ Feature Importance
+         │     └─ Future Predictions (2025)
          │
          ├─► Ensemble Integration (Stacking, Borda, Copeland)
          │
@@ -31,70 +27,57 @@ Panel Data (entities × time × criteria)
 ## Project Structure
 
 ```
-ml-topsis-vikor/
+ml-mcdm/
 ├── run.py                  # Entry point
 ├── pyproject.toml          # Package config
 ├── requirements.txt
 │
 ├── src/
-│   ├── __init__.py
-│   ├── config.py           # Configuration dataclasses
+│   ├── config.py           # Configuration
 │   ├── pipeline.py         # Main orchestrator
 │   ├── data_loader.py      # Panel data I/O
 │   ├── output_manager.py   # Results export
 │   ├── visualization.py    # Charts (300 DPI)
-│   ├── logger.py
+│   ├── logger.py           # Logging system
+│   │
+│   ├── weighting/          # Weight calculation
+│   │   ├── entropy.py
+│   │   ├── critic.py
+│   │   ├── ensemble.py
+│   │   └── docs/README.md
 │   │
 │   ├── mcdm/               # Decision methods
-│   │   ├── weights.py      # Entropy, CRITIC, Ensemble
-│   │   ├── topsis.py       # Distance to ideal solution
-│   │   ├── vikor.py        # Compromise ranking
-│   │   ├── promethee.py    # Outranking flows
-│   │   ├── copras.py       # Proportional assessment
-│   │   ├── edas.py         # Distance from average
-│   │   ├── fuzzy_base.py   # Triangular fuzzy numbers
-│   │   └── fuzzy_*.py      # Fuzzy variants
+│   │   ├── traditional/    # TOPSIS, VIKOR, PROMETHEE, COPRAS, EDAS
+│   │   │   └── docs/README.md
+│   │   └── fuzzy/          # Fuzzy variants with TFN
+│   │       └── docs/README.md
 │   │
 │   ├── ml/                 # Machine learning
-│   │   ├── panel_regression.py     # FE/RE/Pooled OLS
-│   │   ├── random_forest_ts.py     # RF with temporal CV
-│   │   ├── advanced_forecasting.py # Gradient boosting
-│   │   ├── neural_forecasting.py   # MLP + Attention
-│   │   ├── unified_forecasting.py  # Ensemble orchestrator
-│   │   ├── lstm_forecast.py
-│   │   └── rough_sets.py           # Feature reduction
+│   │   └── forecasting/    # Random Forest TS, unified forecaster
+│   │       └── docs/README.md
 │   │
 │   ├── ensemble/           # Aggregation
-│   │   ├── stacking.py     # Meta-learner
-│   │   └── aggregation.py  # Borda, Copeland
+│   │   └── aggregation/    # Stacking, Borda, Copeland
+│   │       └── docs/README.md
 │   │
 │   └── analysis/           # Validation
-│       ├── convergence.py  # Beta/Sigma convergence
-│       ├── sensitivity.py  # Weight perturbation
-│       └── validation.py   # Bootstrap, CV
+│       ├── sensitivity.py
+│       ├── validation.py
+│       └── docs/README.md
 │
 ├── data/
 │   └── data.csv            # Input: Year, Province, C01-C20
 │
 ├── outputs/
-│   ├── figures/            # PNG charts
+│   ├── figures/            # PNG charts (300 DPI)
 │   ├── results/            # CSV files
-│   └── reports/            # Analysis reports
+│   ├── reports/            # Analysis reports
+│   └── logs/               # debug.log
 │
 ├── tests/
 │   └── test_core.py
 │
 └── docs/
-    ├── METHODS.md          # Mathematical formulations
-    └── WORKFLOW.md         # Pipeline phases
+    ├── METHODS.md          # Methods summary
+    └── WORKFLOW.md         # Pipeline workflow
 ```
-
-## Methods
-
-| Category | Methods |
-|----------|---------|
-| **Weighting** | Entropy (information content), CRITIC (contrast + correlation), Ensemble |
-| **MCDM** | TOPSIS, VIKOR, PROMETHEE, COPRAS, EDAS — each with fuzzy variant |
-| **ML** | Panel Regression, Random Forest, Gradient Boosting, Neural Networks |
-| **Ensemble** | Stacking meta-learner, Borda Count, Copeland |
-| **Analysis** | β/σ convergence, Monte Carlo sensitivity, Bootstrap validation |

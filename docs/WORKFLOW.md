@@ -1,731 +1,326 @@
 # ML-MCDM Workflow Guide
 
-This document provides a detailed step-by-step description of the ML-MCDM analysis pipeline workflow.
+This document provides a step-by-step description of the ML-MCDM analysis pipeline workflow.
 
 ---
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Pipeline Architecture](#pipeline-architecture)
-3. [Phase 1: Data Loading](#phase-1-data-loading)
-4. [Phase 2: Weight Calculation](#phase-2-weight-calculation)
-5. [Phase 3: MCDM Analysis](#phase-3-mcdm-analysis)
-6. [Phase 4: ML Analysis](#phase-4-ml-analysis)
-7. [Phase 5: Ensemble Integration](#phase-5-ensemble-integration)
-8. [Phase 6: Advanced Analysis](#phase-6-advanced-analysis)
-9. [Phase 7: Visualization](#phase-7-visualization)
-10. [Phase 8: Output Generation](#phase-8-output-generation)
-11. [Configuration Options](#configuration-options)
-12. [Customization Guide](#customization-guide)
+1. [Overview](#1-overview)
+2. [Pipeline Architecture](#2-pipeline-architecture)
+3. [Pipeline Phases](#3-pipeline-phases)
+4. [Output Structure](#4-output-structure)
+5. [Configuration](#5-configuration)
+6. [Logging](#6-logging)
 
 ---
 
-## Overview
+## 1. Overview
 
-The ML-MCDM pipeline is designed to analyze panel data (multiple entities across multiple time periods) using a combination of Multi-Criteria Decision Making (MCDM) methods and Machine Learning techniques. The pipeline is fully automated and produces comprehensive outputs including rankings, visualizations, and detailed reports.
+The ML-MCDM pipeline analyzes panel data (entities × time periods × criteria) using a combination of Multi-Criteria Decision Making (MCDM) methods and Machine Learning techniques.
 
-### Key Design Principles
+### Key Features
 
-1. **Modularity**: Each phase is independent and can be customized
-2. **Robustness**: Comprehensive error handling with graceful fallbacks
-3. **Transparency**: Detailed logging and intermediate results
-4. **Reproducibility**: Configurable random seeds and parameter management
+- **Automated Pipeline**: Single entry point runs complete analysis
+- **Modular Design**: Each phase is independent and configurable
+- **Robust Error Handling**: Graceful fallbacks with detailed logging
+- **High-Quality Outputs**: 300 DPI figures, comprehensive CSV results, detailed reports
 
 ---
 
-## Pipeline Architecture
+## 2. Pipeline Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        ML-MCDM Analysis Pipeline                         │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐               │
-│  │  Phase 1     │───▶│  Phase 2     │───▶│  Phase 3     │               │
-│  │  Data Load   │    │  Weights     │    │  MCDM        │               │
-│  └──────────────┘    └──────────────┘    └──────────────┘               │
-│         │                   │                   │                        │
-│         ▼                   ▼                   ▼                        │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐               │
-│  │  Panel Data  │    │  Entropy     │    │  TOPSIS      │               │
-│  │  - Long      │    │  CRITIC      │    │  Dynamic     │               │
-│  │  - Wide      │    │  Ensemble    │    │  VIKOR       │               │
-│  │  - Cross-sec │    │              │    │  Fuzzy       │               │
-│  └──────────────┘    └──────────────┘    └──────────────┘               │
-│                                                 │                        │
-│                                                 ▼                        │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐               │
-│  │  Phase 6     │◀───│  Phase 5     │◀───│  Phase 4     │               │
-│  │  Analysis    │    │  Ensemble    │    │  ML          │               │
-│  └──────────────┘    └──────────────┘    └──────────────┘               │
-│         │                   │                   │                        │
-│         ▼                   ▼                   ▼                        │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐               │
-│  │  Convergence │    │  Stacking    │    │  Panel Reg   │               │
-│  │  Sensitivity │    │  Borda       │    │  Random For  │               │
-│  │              │    │  Copeland    │    │  LSTM        │               │
-│  │              │    │              │    │  Rough Sets  │               │
-│  └──────────────┘    └──────────────┘    └──────────────┘               │
-│                                                                          │
-│         │                   │                   │                        │
-│         └───────────────────┼───────────────────┘                        │
-│                             ▼                                            │
-│  ┌──────────────┐    ┌──────────────┐                                   │
-│  │  Phase 7     │───▶│  Phase 8     │                                   │
-│  │  Visualize   │    │  Output      │                                   │
-│  └──────────────┘    └──────────────┘                                   │
-│                             │                                            │
-│                             ▼                                            │
-│                    ┌──────────────┐                                      │
-│                    │  Results     │                                      │
-│                    │  - figures/  │                                      │
-│                    │  - results/  │                                      │
-│                    │  - reports/  │                                      │
-│                    └──────────────┘                                      │
+│  Phase 1        Phase 2        Phase 3        Phase 4                   │
+│  ┌──────┐      ┌──────┐      ┌──────┐      ┌──────┐                    │
+│  │ Data │ ───► │Weight│ ───► │ MCDM │ ───► │  ML  │                    │
+│  │ Load │      │ Calc │      │      │      │      │                    │
+│  └──────┘      └──────┘      └──────┘      └──────┘                    │
+│                                               │                          │
+│  Phase 8        Phase 7        Phase 6        Phase 5                   │
+│  ┌──────┐      ┌──────┐      ┌──────┐      ┌──────┐                    │
+│  │Output│ ◄─── │Visual│ ◄─── │Analys│ ◄─── │Ensem │ ◄──────────────────┘
+│  │ Save │      │      │      │      │      │ ble  │                    │
+│  └──────┘      └──────┘      └──────┘      └──────┘                    │
+│      │                                                                   │
+│      ▼                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │ outputs/                                                         │    │
+│  │   ├── figures/    (22 high-resolution PNG charts)               │    │
+│  │   ├── results/    (CSV data files + JSON metadata)              │    │
+│  │   ├── reports/    (comprehensive analysis report)               │    │
+│  │   └── logs/       (debug.log with detailed execution log)       │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Phase 1: Data Loading
+## 3. Pipeline Phases
 
-### Purpose
-Load and structure panel data for analysis.
+### Phase 1: Data Loading
 
-### Input Options
+**Purpose:** Load and structure panel data for analysis.
 
-1. **CSV File**: Load from `data/data.csv`
-2. **Synthetic Data**: Auto-generate if no file provided
+| Input | Output |
+|-------|--------|
+| CSV file (`data/data.csv`) or synthetic generation | `PanelData` object with long, wide, and cross-section views |
 
-### Data Structures Created
-
-```python
-PanelData:
+**Data Structure:**
+```
+PanelData
 ├── long: DataFrame         # Long format (Year, Province, C01...C20)
 ├── wide: Dict[year, DataFrame]  # Province × Components per year
-├── cross_section: Dict[year, DataFrame]  # Year-specific cross-sections
-├── provinces: List[str]    # Entity identifiers
-├── years: List[int]        # Time periods
-└── components: List[str]   # Criteria names
-```
-
-### Processing Steps
-
-1. **Load raw data** from CSV or generate synthetic
-2. **Validate structure** (required columns, data types)
-3. **Create views**:
-   - Long format for regression
-   - Wide format for time-series
-   - Cross-sectional for MCDM
-4. **Feature engineering** (temporal features, lags, trends)
-
-### Example Code
-
-```python
-from src.data_loader import PanelDataLoader
-
-loader = PanelDataLoader(config)
-panel_data = loader.load('data/data.csv')
-
-# Or generate synthetic
-panel_data = loader.generate_synthetic(
-    n_provinces=64,
-    n_years=5,
-    n_components=20
-)
-```
-
-### Output
-
-```
-Panel data loaded: 64 entities, 5 periods, 20 components
+├── cross_section: Dict[year, DataFrame]
+├── provinces: List[str]    # Entity identifiers (64 provinces)
+├── years: List[int]        # Time periods (2020-2024)
+└── components: List[str]   # Criteria names (C01-C20)
 ```
 
 ---
 
-## Phase 2: Weight Calculation
+### Phase 2: Weight Calculation
 
-### Purpose
-Determine objective weights for each criterion using data-driven methods.
+**Purpose:** Calculate objective criteria weights using data-driven methods.
 
-### Methods Applied
+| Method | Description |
+|--------|-------------|
+| Entropy | Based on information content |
+| CRITIC | Based on contrast + correlation |
+| Ensemble | Geometric mean combination |
 
-| Method | Description | Output |
-|--------|-------------|--------|
-| Entropy | Based on information content | `entropy_weights` |
-| CRITIC | Based on contrast and correlation | `critic_weights` |
-| Ensemble | Geometric mean of above | `ensemble_weights` |
-
-### Processing Steps
-
-1. **Get latest cross-section** (most recent year)
-2. **Calculate Entropy weights**:
-   - Normalize columns to proportions
-   - Calculate Shannon entropy
-   - Convert to weights
-3. **Calculate CRITIC weights**:
-   - Calculate standard deviation
-   - Calculate correlation matrix
-   - Compute information content
-4. **Combine into Ensemble**:
-   - Geometric mean of Entropy and CRITIC
-   - Normalize to sum to 1
-
-### Data Flow
-
-```
-Cross-section (latest year)
-        │
-        ├──▶ Entropy Calculator ──▶ entropy_weights
-        │
-        ├──▶ CRITIC Calculator ──▶ critic_weights
-        │
-        └──▶ Ensemble Calculator ──▶ ensemble_weights
-```
-
-### Output
-
-```
-Entropy weights range: [0.0312, 0.0723]
-CRITIC weights range: [0.0289, 0.0815]
-```
+**Output:** `weights_analysis.csv`
 
 ---
 
-## Phase 3: MCDM Analysis
+### Phase 3: MCDM Analysis
 
-### Purpose
-Calculate rankings using multiple MCDM methods.
+**Purpose:** Calculate rankings using multiple MCDM methods.
 
-### Methods Applied
+| Method | Type | Output |
+|--------|------|--------|
+| TOPSIS | Traditional | Scores, Rankings |
+| Dynamic TOPSIS | Temporal-aware | Dynamic scores |
+| VIKOR | Traditional | Q, S, R values |
+| Fuzzy TOPSIS | Uncertainty-aware | Fuzzy scores |
 
-| Method | Input | Output |
-|--------|-------|--------|
-| TOPSIS | Latest cross-section + weights | scores, rankings |
-| Dynamic TOPSIS | Full panel data + weights | temporal scores |
-| VIKOR | Latest cross-section + weights | S, R, Q values |
-| Fuzzy TOPSIS | Panel data (for variance) + weights | fuzzy scores |
-
-### Processing Steps
-
-1. **Standard TOPSIS**:
-   - Normalize decision matrix
-   - Apply weights
-   - Calculate ideal/anti-ideal solutions
-   - Calculate distances and closeness coefficients
-   
-2. **Dynamic TOPSIS**:
-   - Apply temporal discount factors
-   - Calculate trajectory scores
-   - Compute stability scores
-   - Combine into dynamic score
-
-3. **VIKOR**:
-   - Calculate S (group utility)
-   - Calculate R (individual regret)
-   - Calculate Q (compromise)
-   - Check acceptance conditions
-
-4. **Fuzzy TOPSIS**:
-   - Generate triangular fuzzy numbers from temporal variance
-   - Apply fuzzy TOPSIS algorithm
-   - Defuzzify results
-
-### Data Flow
-
-```
-Panel Data + Ensemble Weights
-        │
-        ├──▶ TOPSIS ──▶ topsis_scores, topsis_rankings
-        │
-        ├──▶ Dynamic TOPSIS ──▶ dynamic_topsis_scores
-        │
-        ├──▶ VIKOR ──▶ S, R, Q, vikor_rankings
-        │
-        └──▶ Fuzzy TOPSIS ──▶ fuzzy_scores
-```
-
-### Output
-
-```
-TOPSIS: Top performer score = 0.7845
-VIKOR: Best alternative Q = 0.0231
-Fuzzy TOPSIS: Top performer = 0.8123
-```
+**Output:** `mcdm_scores_detailed.csv`, `final_rankings.csv`
 
 ---
 
-## Phase 4: ML Analysis
+### Phase 4: ML Analysis
 
-### Purpose
-Apply machine learning methods for validation, feature importance, and forecasting.
+**Purpose:** Feature importance analysis and validation using Random Forest.
 
-### Methods Applied
+| Component | Description |
+|-----------|-------------|
+| Random Forest TS | Time-series cross-validation |
+| Feature Importance | Component contribution analysis |
+| CV Scores | Model validation metrics |
 
-| Method | Purpose | Output |
-|--------|---------|--------|
-| Panel Regression | Coefficient estimation | coefficients, R² |
-| Random Forest | Feature importance | importance scores |
-| LSTM | Future prediction | forecasts |
-| Rough Sets | Attribute reduction | core attributes, reducts |
-
-### Processing Steps
-
-1. **Prepare Features**:
-   - Create temporal features (lags, trends, rolling means)
-   - Map MCDM scores to panel data
-   
-2. **Panel Regression**:
-   - Fit Fixed Effects model
-   - Estimate coefficients
-   - Calculate significance tests
-
-3. **Random Forest with TS-CV**:
-   - Time-series cross-validation
-   - Train final model
-   - Extract feature importance
-
-4. **LSTM Forecasting**:
-   - Prepare sequences
-   - Train LSTM model
-   - Generate predictions
-
-5. **Rough Set Reduction**:
-   - Discretize attributes
-   - Find core attributes
-   - Identify reducts
-
-### Data Flow
-
-```
-Panel Data + MCDM Scores
-        │
-        ├──▶ Panel Regression ──▶ coefficients, R²
-        │
-        ├──▶ Random Forest ──▶ feature_importance
-        │
-        ├──▶ LSTM ──▶ lstm_forecasts
-        │
-        └──▶ Rough Sets ──▶ core_attributes, reducts
-```
-
-### Error Handling
-
-Each ML method has fallback handling:
-- If Panel Regression fails → Skip with warning
-- If Random Forest fails → Return empty importance
-- If LSTM fails → Return null forecasts
-- If Rough Sets fails → Return empty reduction
+**Output:** `feature_importance.csv`, `cv_scores.csv`, `rf_test_metrics.csv`
 
 ---
 
-## Phase 5: Ensemble Integration
+### Phase 5: Ensemble Integration
 
-### Purpose
-Combine results from multiple methods into a final ranking.
+**Purpose:** Combine results from multiple methods into final ranking.
 
-### Methods Applied
+| Method | Description |
+|--------|-------------|
+| Stacking | Meta-learner combining MCDM predictions |
+| Borda Count | Point-based rank aggregation |
+| Kendall's W | Agreement measure |
 
-| Method | Input | Output |
-|--------|-------|--------|
-| Stacking | All score predictions | weighted predictions |
-| Borda Count | All rankings | aggregated ranking |
-| Copeland | All rankings | pairwise-based ranking |
-
-### Processing Steps
-
-1. **Prepare Base Predictions**:
-   ```python
-   base_predictions = {
-       'topsis': topsis_scores,
-       'dynamic_topsis': dynamic_scores,
-       'vikor_q': vikor_Q,
-       'fuzzy': fuzzy_scores,
-       'rf_pred': rf_predictions  # if available
-   }
-   ```
-
-2. **Stacking Ensemble**:
-   - Train Ridge meta-learner
-   - Generate weighted predictions
-   - Calculate meta-model weights
-
-3. **Rank Aggregation**:
-   - Convert all scores to rankings
-   - Apply Borda Count (positional voting)
-   - Apply Copeland (pairwise comparisons)
-   - Calculate Kendall's W (agreement)
-
-### Data Flow
-
-```
-MCDM Scores + ML Predictions
-        │
-        ├──▶ Stacking ──▶ meta_weights, final_predictions
-        │
-        └──▶ Rank Aggregation
-             ├──▶ Borda Count ──▶ borda_ranking
-             └──▶ Copeland ──▶ copeland_ranking
-                     │
-                     ▼
-             ┌──────────────────┐
-             │ Final Aggregated │
-             │     Ranking      │
-             │ + Kendall's W    │
-             └──────────────────┘
-```
-
-### Output
-
-```
-Kendall's W (agreement): 0.8234
-Top 3: [Province_12, Province_45, Province_08]
-```
+**Output:** `stacking_weights.csv`, `aggregation_metadata.json`
 
 ---
 
-## Phase 6: Advanced Analysis
+### Phase 6: Advanced Analysis
 
-### Purpose
-Assess robustness and temporal dynamics of rankings.
+**Purpose:** Assess robustness and temporal dynamics.
 
-### Methods Applied
+| Analysis | Description |
+|----------|-------------|
+| Sigma Convergence | Dispersion trend over time |
+| Beta Convergence | Catch-up speed analysis |
+| Sensitivity | Weight perturbation impact |
 
-| Method | Purpose | Output |
-|--------|---------|--------|
-| Convergence | Test if entities are converging | β, σ coefficients |
-| Sensitivity | Test ranking robustness | sensitivity indices |
-
-### Processing Steps
-
-1. **Convergence Analysis**:
-   - Prepare score time-series
-   - Run β-convergence regression
-   - Calculate σ-convergence trend
-   - Identify convergence clubs (if any)
-
-2. **Sensitivity Analysis**:
-   - Define ranking function
-   - Monte Carlo weight perturbation (1000 simulations)
-   - Calculate weight sensitivity indices
-   - Find critical weight ranges
-   - Compute top-N stability
-
-### Data Flow
-
-```
-MCDM Scores (all years)
-        │
-        ├──▶ Convergence Analysis
-        │         │
-        │         ├──▶ β coefficient (catch-up)
-        │         ├──▶ σ by year (dispersion)
-        │         └──▶ convergence clubs
-        │
-        └──▶ Sensitivity Analysis
-                  │
-                  ├──▶ weight_sensitivity
-                  ├──▶ rank_stability
-                  ├──▶ critical_weights
-                  └──▶ overall_robustness
-```
-
-### Output
-
-```
-Beta convergence: -0.0234 (converging: YES)
-Sigma trend: -0.0015 (converging: YES)
-Overall robustness: 0.87
-```
+**Output:** `sigma_convergence.csv`, `beta_convergence.csv`, `sensitivity_analysis.csv`
 
 ---
 
-## Phase 7: Visualization
+### Phase 6.5: Future Prediction
 
-### Purpose
-Generate high-resolution figures for all analyses.
+**Purpose:** Predict next year (2025) rankings using ML forecasting.
 
-### Visualizations Generated
+| Component | Description |
+|-----------|-------------|
+| Predicted Components | Forecasted criterion values for 2025 |
+| Predicted Rankings | TOPSIS/VIKOR rankings for 2025 |
+| Uncertainty | Prediction confidence intervals |
 
-| Chart | Description | File |
-|-------|-------------|------|
-| Score Evolution | Scores over time | `score_evolution.png` |
-| Weight Comparison | Entropy vs CRITIC vs Ensemble | `weights_comparison.png` |
-| MCDM Comparison | Method rankings comparison | `mcdm_comparison.png` |
-| Feature Importance | RF feature importance | `feature_importance.png` |
-| Convergence | β and σ convergence plots | `convergence.png` |
-| Sensitivity | Weight sensitivity heatmap | `sensitivity.png` |
-| Ranking Agreement | Method correlation matrix | `ranking_agreement.png` |
-
-### Configuration
-
-- **Resolution**: 300 DPI (publication quality)
-- **Format**: PNG (configurable)
-- **Style**: Professional with consistent color scheme
-
-### Output Directory
-
-```
-outputs/figures/
-├── score_evolution.png
-├── weights_comparison.png
-├── mcdm_comparison.png
-├── feature_importance.png
-├── convergence.png
-├── sensitivity.png
-└── ranking_agreement.png
-```
+**Output:** `predicted_rankings_2025.csv`, `predicted_components_2025.csv`, `prediction_uncertainty_2025.csv`
 
 ---
 
-## Phase 8: Output Generation
+### Phase 7: Visualization
 
-### Purpose
-Save all results in organized, accessible formats.
+**Purpose:** Generate high-resolution figures (300 DPI).
 
-### Output Structure
+| Category | Figures |
+|----------|---------|
+| Score Evolution | Top/bottom performers over time (01-02) |
+| Weights | Comparison chart (03) |
+| MCDM Results | TOPSIS, VIKOR, method agreement (04-07) |
+| ML Analysis | Feature importance, CV progression (08, 16-22) |
+| Analysis | Sensitivity, final ranking (09-12) |
+| Predictions | Future predictions comparison (13) |
+
+**Output:** 22 PNG files in `outputs/figures/`
+
+---
+
+### Phase 8: Output Generation
+
+**Purpose:** Save all results in organized structure.
+
+See [Output Structure](#4-output-structure) below.
+
+---
+
+## 4. Output Structure
 
 ```
 outputs/
-├── figures/                     # Visualizations
-│   ├── score_evolution.png
-│   ├── weights_comparison.png
-│   └── ...
+├── figures/                          # High-resolution visualizations
+│   ├── 01_score_evolution_top.png
+│   ├── 02_score_evolution_bottom.png
+│   ├── 03_weights_comparison.png
+│   ├── 04_topsis_scores.png
+│   ├── 05_vikor_analysis.png
+│   ├── 06_method_agreement.png
+│   ├── 07_score_distribution.png
+│   ├── 08_feature_importance.png
+│   ├── 09_sensitivity_analysis.png
+│   ├── 10_final_ranking.png
+│   ├── 11_method_comparison.png
+│   ├── 12_ensemble_weights.png
+│   ├── 13_future_predictions.png
+│   ├── 16_rf_feature_importance_detailed.png
+│   ├── 17_rf_cv_progression.png
+│   ├── 18_rf_actual_vs_predicted.png
+│   ├── 19_rf_residual_analysis.png
+│   ├── 20_rf_rank_correlation.png
+│   ├── 21_ensemble_contribution.png
+│   ├── 22_rf_model_performance.png
+│   └── figure_manifest.json
 │
-├── results/                     # Numerical data (CSV)
-│   ├── final_rankings.csv      # Main ranking output
-│   ├── weights_analysis.csv    # Criterion weights
-│   ├── mcdm_scores_detailed.csv
-│   ├── feature_importance.csv
-│   ├── sensitivity_analysis.csv
-│   ├── beta_convergence.csv
-│   ├── sigma_convergence.csv
-│   └── output_manifest.json    # File index
+├── results/                          # Numerical data
+│   ├── final_rankings.csv            # Main ranking output
+│   ├── weights_analysis.csv          # Criterion weights
+│   ├── mcdm_scores_detailed.csv      # All MCDM scores
+│   ├── feature_importance.csv        # RF feature importance
+│   ├── cv_scores.csv                 # Cross-validation scores
+│   ├── rf_test_metrics.csv           # RF test performance
+│   ├── stacking_weights.csv          # Ensemble weights
+│   ├── sensitivity_analysis.csv      # Sensitivity indices
+│   ├── sigma_convergence.csv         # σ-convergence by year
+│   ├── beta_convergence.csv          # β-convergence results
+│   ├── predicted_rankings_2025.csv   # Future predictions
+│   ├── predicted_components_2025.csv # Predicted values
+│   ├── prediction_uncertainty_2025.csv
+│   ├── forecast_summary_2025.json
+│   ├── config_snapshot.json          # Run configuration
+│   ├── execution_summary.json        # Timing info
+│   └── output_manifest.json          # File index
 │
-├── reports/                     # Text reports
-│   └── analysis_report.txt     # Comprehensive summary
+├── reports/
+│   └── analysis_report.txt           # Comprehensive text report
 │
-└── logs/                        # Execution logs
-    └── pipeline.log
+└── logs/
+    └── debug.log                     # Detailed execution log
 ```
 
-### Final Rankings CSV Format
+---
 
-```csv
-Province,Final_Rank,Final_Score,TOPSIS_Rank,VIKOR_Rank,Fuzzy_Rank,Kendall_W
-P12,1,0.8234,1,2,1,0.89
-P45,2,0.7891,3,1,2,0.89
-P08,3,0.7654,2,3,4,0.89
+## 5. Configuration
+
+### Running the Pipeline
+
+```python
+from src.pipeline import MLTOPSISPipeline
+from src.config import get_default_config
+
+# With default config
+pipeline = MLTOPSISPipeline()
+result = pipeline.run('data/data.csv')
+
+# With custom config
+config = get_default_config()
+config.output_dir = 'custom_outputs'
+pipeline = MLTOPSISPipeline(config)
+result = pipeline.run()
+```
+
+### Command Line
+
+```bash
+python run.py
+```
+
+### Key Configuration Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `output_dir` | `outputs` | Output directory |
+| `n_estimators` | 200 | RF trees |
+| `n_splits` | 5 | CV folds |
+| `random_state` | 42 | Reproducibility |
+
+---
+
+## 6. Logging
+
+### Console Output
+
+- **Level:** INFO
+- **Format:** Simple text (no colors)
+- **Content:** Phase progress, key metrics
+
+### Debug Log File
+
+- **Location:** `outputs/logs/debug.log`
+- **Level:** DEBUG (captures everything)
+- **Format:** `timestamp | level | module | function:line | message`
+
+### Example Console Output
+
+```
+12:30:45 | INFO     | ▶ Starting: Phase 1: Data Loading
+12:30:46 | INFO     | ✓ Completed: Phase 1: Data Loading (0.82s)
+12:30:46 | INFO     | ▶ Starting: Phase 2: Weight Calculation
+12:30:46 | INFO     | ✓ Completed: Phase 2: Weight Calculation (0.15s)
 ...
+12:31:30 | INFO     | Pipeline completed in 45.23 seconds
+12:31:30 | INFO     | Outputs saved to: outputs
 ```
-
-### Output Manifest (JSON)
-
-```json
-{
-  "timestamp": "2024-01-31T10:30:00",
-  "execution_time": 45.23,
-  "files": {
-    "rankings": "results/final_rankings.csv",
-    "weights": "results/weights_analysis.csv",
-    "figures": ["figures/score_evolution.png", ...],
-    "report": "reports/analysis_report.txt"
-  },
-  "config": {
-    "n_provinces": 64,
-    "n_years": 5,
-    "n_components": 20
-  }
-}
-```
-
----
-
-## Configuration Options
-
-### Main Configuration (`src/config.py`)
-
-```python
-@dataclass
-class Config:
-    # Panel data
-    panel: PanelDataConfig
-        n_provinces: int = 64
-        n_components: int = 20
-        years: List[int] = [2020, 2021, 2022, 2023, 2024]
-    
-    # TOPSIS
-    topsis: TOPSISConfig
-        normalization: str = "vector"
-        temporal_discount: float = 0.95
-        trajectory_weight: float = 0.3
-        stability_weight: float = 0.2
-    
-    # VIKOR
-    vikor: VIKORConfig
-        v: float = 0.5  # Group utility weight
-    
-    # Random Forest
-    rf: RandomForestConfig
-        n_estimators: int = 200
-        max_depth: int = 10
-        n_splits: int = 3
-    
-    # LSTM
-    lstm: LSTMConfig
-        sequence_length: int = 3
-        hidden_units: int = 64
-        epochs: int = 100
-    
-    # Sensitivity
-    sensitivity: SensitivityConfig
-        n_simulations: int = 1000
-        perturbation_range: float = 0.2
-```
-
-### Quick Configuration via `main.py`
-
-```python
-CONFIG = {
-    'data_path': 'data/data.csv',  # or None for synthetic
-    'n_provinces': 64,
-    'n_years': 5,
-    'n_components': 20,
-    'output_dir': 'outputs',
-}
-```
-
----
-
-## Customization Guide
-
-### Adding a New MCDM Method
-
-1. Create new file in `src/mcdm/`:
-```python
-# src/mcdm/new_method.py
-class NewMCDMMethod:
-    def calculate(self, data, weights):
-        # Implementation
-        return NewMCDMResult(scores=scores, ranks=ranks)
-```
-
-2. Add to `src/mcdm/__init__.py`:
-```python
-from .new_method import NewMCDMMethod
-```
-
-3. Integrate in `src/main.py`:
-```python
-def _run_mcdm(self, panel_data, weights):
-    # ... existing code ...
-    new_method = NewMCDMMethod()
-    new_result = new_method.calculate(df, weights_dict)
-    results['new_method'] = new_result
-```
-
-### Adding a New ML Method
-
-1. Create new file in `src/ml/`:
-```python
-# src/ml/new_ml.py
-class NewMLMethod:
-    def fit_predict(self, panel_data, target_col):
-        # Implementation
-        return NewMLResult(predictions=preds, metrics=metrics)
-```
-
-2. Add to `src/ml/__init__.py`
-
-3. Integrate in `_run_ml()` method
-
-### Custom Visualization
-
-Add new visualization to `src/visualization.py`:
-
-```python
-def plot_custom_chart(self, data, save_path):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    # Custom plotting logic
-    fig.savefig(save_path, dpi=self.dpi, bbox_inches='tight')
-    plt.close(fig)
-```
-
-### Custom Output Format
-
-Modify `src/output_manager.py`:
-
-```python
-def save_custom_format(self, data, filename):
-    # Custom format logic (Excel, JSON, etc.)
-    pass
-```
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Insufficient data for LSTM**:
-   - Reduce `sequence_length` or
-   - Increase number of time periods
-
-2. **Panel regression fails**:
-   - Check for missing values
-   - Ensure sufficient variation in target
-
-3. **Convergence not detected**:
-   - May need more time periods (≥4)
-   - Check if data has actual convergence pattern
-
-4. **High memory usage**:
-   - Reduce `n_simulations` in sensitivity analysis
-   - Use smaller batch sizes for LSTM
-
-### Logging
-
-Enable debug logging:
-
-```python
-import logging
-logging.getLogger('ml_topsis').setLevel(logging.DEBUG)
-```
-
-Check logs at: `outputs/logs/pipeline.log`
-
----
-
-## Performance Tips
-
-1. **Parallel Processing**: Monte Carlo simulations can be parallelized
-2. **Caching**: Intermediate results are cached during pipeline execution
-3. **Batch Processing**: For large datasets, process in entity batches
-4. **Memory**: Use `del` to free large intermediate DataFrames
-
-### Typical Execution Times
-
-| Configuration | Time |
-|--------------|------|
-| 64 entities × 5 years × 20 criteria | ~45 seconds |
-| 100 entities × 10 years × 30 criteria | ~3 minutes |
-| 200 entities × 20 years × 50 criteria | ~15 minutes |
 
 ---
 
 ## Summary
 
-The ML-MCDM pipeline provides a comprehensive, automated framework for multi-criteria decision analysis. By following this workflow, users can:
+The ML-MCDM pipeline provides:
 
-1. **Load** any panel data structure
-2. **Weight** criteria objectively
-3. **Rank** alternatives using multiple MCDM methods
-4. **Validate** with machine learning
-5. **Combine** results through ensemble methods
-6. **Analyze** robustness and convergence
-7. **Visualize** all results professionally
-8. **Export** comprehensive outputs
+1. **Automated Analysis**: Single command runs complete workflow
+2. **Multiple Methods**: MCDM (5 traditional + 5 fuzzy) + ML (Random Forest)
+3. **Future Predictions**: 2025 rankings with uncertainty
+4. **Comprehensive Outputs**: Figures, CSVs, reports, logs
+5. **Robust Design**: Error handling with detailed logging
 
-For detailed method descriptions, see [METHODS.md](METHODS.md).
+For method details, see [METHODS.md](METHODS.md).

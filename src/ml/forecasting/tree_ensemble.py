@@ -18,6 +18,7 @@ from sklearn.ensemble import (
     RandomForestRegressor,
     ExtraTreesRegressor,
 )
+from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import RobustScaler
 
 from .base import BaseForecaster
@@ -55,7 +56,7 @@ class GradientBoostingForecaster(BaseForecaster):
         self.subsample = subsample
         self.random_state = random_state
         
-        self.model = GradientBoostingRegressor(
+        self._base_model = GradientBoostingRegressor(
             n_estimators=n_estimators,
             max_depth=max_depth,
             learning_rate=learning_rate,
@@ -66,14 +67,29 @@ class GradientBoostingForecaster(BaseForecaster):
             n_iter_no_change=20,
             tol=1e-4
         )
+        self.model = None  # Will be set during fit
         self.scaler = RobustScaler()
         self.feature_importance_: Optional[np.ndarray] = None
+        self._is_multi_output = False
     
     def fit(self, X: np.ndarray, y: np.ndarray) -> 'GradientBoostingForecaster':
         """Fit the gradient boosting model."""
         X_scaled = self.scaler.fit_transform(X)
-        self.model.fit(X_scaled, y.ravel() if y.ndim > 1 else y)
-        self.feature_importance_ = self.model.feature_importances_
+        
+        # Handle multi-output case
+        if y.ndim > 1 and y.shape[1] > 1:
+            self._is_multi_output = True
+            self.model = MultiOutputRegressor(self._base_model)
+            self.model.fit(X_scaled, y)
+            # Average feature importance across outputs
+            self.feature_importance_ = np.mean(
+                [est.feature_importances_ for est in self.model.estimators_], axis=0
+            )
+        else:
+            self._is_multi_output = False
+            self.model = self._base_model
+            self.model.fit(X_scaled, y.ravel() if y.ndim > 1 else y)
+            self.feature_importance_ = self.model.feature_importances_
         return self
     
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -134,9 +150,10 @@ class RandomForestForecaster(BaseForecaster):
         self.feature_importance_: Optional[np.ndarray] = None
     
     def fit(self, X: np.ndarray, y: np.ndarray) -> 'RandomForestForecaster':
-        """Fit the random forest model."""
+        """Fit the random forest model (supports multi-output natively)."""
         X_scaled = self.scaler.fit_transform(X)
-        self.model.fit(X_scaled, y.ravel() if y.ndim > 1 else y)
+        # RandomForest supports multi-output natively
+        self.model.fit(X_scaled, y)
         self.feature_importance_ = self.model.feature_importances_
         return self
     
@@ -216,9 +233,10 @@ class ExtraTreesForecaster(BaseForecaster):
         self.feature_importance_: Optional[np.ndarray] = None
     
     def fit(self, X: np.ndarray, y: np.ndarray) -> 'ExtraTreesForecaster':
-        """Fit the extra trees model."""
+        """Fit the extra trees model (supports multi-output natively)."""
         X_scaled = self.scaler.fit_transform(X)
-        self.model.fit(X_scaled, y.ravel() if y.ndim > 1 else y)
+        # ExtraTrees supports multi-output natively
+        self.model.fit(X_scaled, y)
         self.feature_importance_ = self.model.feature_importances_
         return self
     

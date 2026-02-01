@@ -519,7 +519,8 @@ class LoggerFactory:
         use_colors: bool = True,
         use_icons: bool = False,
         max_bytes: int = MAX_LOG_SIZE,
-        backup_count: int = BACKUP_COUNT
+        backup_count: int = BACKUP_COUNT,
+        **kwargs
     ) -> logging.Logger:
         """
         Setup and configure the root logger.
@@ -568,17 +569,27 @@ class LoggerFactory:
         # Console handler
         if console:
             console_handler = logging.StreamHandler(sys.stdout)
-            console_handler.setLevel(level)
-            console_fmt = ColoredFormatter(
-                fmt='%(asctime)s │ %(levelname)s │ %(message)s',
-                datefmt=CONSOLE_DATE_FORMAT,
-                use_colors=use_colors,
-                use_icons=use_icons
-            )
+            # Use console_level if provided, otherwise use level
+            actual_console_level = kwargs.get('console_level', level)
+            console_handler.setLevel(actual_console_level)
+            
+            if use_colors:
+                console_fmt = ColoredFormatter(
+                    fmt='%(asctime)s │ %(levelname)s │ %(message)s',
+                    datefmt=CONSOLE_DATE_FORMAT,
+                    use_colors=use_colors,
+                    use_icons=use_icons
+                )
+            else:
+                # Simple text format without colors
+                console_fmt = CleanFormatter(
+                    fmt='%(asctime)s | %(levelname)-8s | %(message)s',
+                    datefmt=CONSOLE_DATE_FORMAT
+                )
             console_handler.setFormatter(console_fmt)
             logger.addHandler(console_handler)
         
-        # File handler (plain text with rotation)
+        # File handler (debug log - logs everything at DEBUG level)
         if log_file:
             log_file = Path(log_file)
             log_file.parent.mkdir(parents=True, exist_ok=True)
@@ -589,9 +600,10 @@ class LoggerFactory:
                 backupCount=backup_count,
                 encoding='utf-8'
             )
-            file_handler.setLevel(level)
+            # Always log at DEBUG level to capture all details
+            file_handler.setLevel(logging.DEBUG)
             file_fmt = CleanFormatter(
-                fmt='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
+                fmt='%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d | %(message)s',
                 datefmt=DEFAULT_DATE_FORMAT
             )
             file_handler.setFormatter(file_fmt)
@@ -681,7 +693,8 @@ def setup_logger(
     name: str = LOG_NAME,
     level: int = logging.INFO,
     log_file: Optional[Path] = None,
-    console: bool = True
+    console: bool = True,
+    debug_file: Optional[Path] = None
 ) -> logging.Logger:
     """
     Setup and configure logger (convenience function).
@@ -691,22 +704,35 @@ def setup_logger(
     name : str
         Logger name
     level : int
-        Logging level
+        Logging level for console output
     log_file : Path, optional
-        Path for log file
+        Path for log file (deprecated, use debug_file instead)
     console : bool
-        Enable console output
+        Enable console output (simple text, no colors)
+    debug_file : Path, optional
+        Path for debug log file (logs everything at DEBUG level)
     
     Returns
     -------
     logging.Logger
         Configured logger instance
+    
+    Notes
+    -----
+    - Console output: INFO level, simple text format (no colors)
+    - Debug file: DEBUG level, detailed logging with timestamps
     """
+    # Use debug_file if provided, otherwise fall back to log_file for backwards compatibility
+    actual_debug_file = debug_file if debug_file else log_file
+    
     return LoggerFactory.setup(
         name=name,
-        level=level,
-        log_file=log_file,
-        console=console
+        level=logging.DEBUG,  # Set root logger to DEBUG to capture all
+        log_file=actual_debug_file,
+        console=console,
+        use_colors=False,  # Simple text output
+        use_icons=False,
+        console_level=level  # INFO level for console
     )
 
 

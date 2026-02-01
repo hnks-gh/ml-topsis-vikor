@@ -989,6 +989,7 @@ class OutputManager:
             Path to saved manifest
         """
         # Figure descriptions based on naming convention
+        # NOTE: This project uses Random Forest (RF) for time-series forecasting
         figure_descriptions = {
             # Core MCDM Analysis (01-15)
             '01_score_evolution_top': 'Score evolution over time for top 10 performers',
@@ -998,35 +999,34 @@ class OutputManager:
             '05_vikor_analysis': 'VIKOR analysis showing Q, S, R values',
             '06_method_agreement': 'MCDM methods ranking agreement (Spearman correlation matrix)',
             '07_score_distribution': 'TOPSIS score distribution histogram',
+            '08_feature_importance': 'Random Forest feature importance for MCDM score prediction',
             '08_sigma_convergence': 'Sigma convergence analysis over time',
+            '09_sensitivity_analysis': 'Criteria weight sensitivity analysis',
             '09_beta_convergence': 'Beta convergence analysis information',
             '10_feature_importance': 'Random Forest feature importance',
+            '10_final_ranking': 'Final aggregated ranking summary',
             '11_sensitivity_analysis': 'Criteria weight sensitivity analysis',
+            '11_method_comparison': 'MCDM methods ranking comparison (parallel coordinates)',
             '12_final_ranking': 'Final aggregated ranking summary',
+            '12_ensemble_weights': 'Stacking ensemble model weights',
             '13_method_comparison': 'MCDM methods ranking comparison (parallel coordinates)',
+            '13_future_predictions': 'Future predictions comparison (current vs predicted rankings)',
             '14_ensemble_weights': 'Stacking ensemble model weights',
             '15_future_predictions': 'Future predictions comparison (current vs predicted rankings)',
             
-            # ML Process & Progress Visualizations (16-27) - Single Charts
-            '16_lstm_training_curve': 'LSTM neural network training progress with loss curves and convergence analysis',
-            '17_lstm_actual_vs_predicted': 'LSTM model actual vs predicted values scatter plot with regression analysis',
-            '18_lstm_residual_analysis': 'LSTM model residual distribution with statistical bands',
-            '19_rf_feature_importance_detailed': 'Random Forest feature importance with cumulative contribution analysis',
-            '20_rf_cv_progression': 'Random Forest cross-validation score progression across folds',
-            '21_rf_actual_vs_predicted': 'Random Forest model actual vs predicted values with confidence intervals',
-            '22_rf_residual_analysis': 'Random Forest model residual analysis with trend detection',
-            '23_rf_rank_correlation': 'Random Forest rank prediction accuracy with Spearman correlation',
-            '24_model_convergence': 'Multi-metric model convergence behavior analysis',
-            '25_ensemble_contribution': 'Ensemble model base model contribution with R² comparison',
-            '26_lstm_rank_correlation': 'LSTM model rank prediction accuracy analysis',
-            '27_ml_model_comparison': 'Machine learning model performance comparison across metrics',
+            # ML Process & Progress Visualizations (16-22) - Random Forest Based
+            '16_rf_feature_importance_detailed': 'Random Forest feature importance with cumulative contribution analysis',
+            '17_rf_cv_progression': 'Random Forest cross-validation score progression across folds',
+            '18_rf_actual_vs_predicted': 'Random Forest model actual vs predicted values with regression analysis',
+            '19_rf_residual_analysis': 'Random Forest model residual distribution with statistical bands',
+            '20_rf_rank_correlation': 'Random Forest rank prediction accuracy with Spearman correlation',
+            '21_ensemble_contribution': 'Ensemble model base model contribution with R² comparison',
+            '22_rf_model_performance': 'Random Forest model performance metrics summary',
             
             # Legacy figure names (for backwards compatibility)
-            'rf_analysis': 'Random Forest analysis (feature importance, predictions)',
+            'rf_analysis': 'Random Forest analysis (feature importance, CV scores, predictions)',
             'cv_results': 'Cross-validation performance results',
             'rf_prediction_analysis': 'Random Forest prediction vs actual analysis',
-            'lstm_forecast': 'LSTM time-series forecast results',
-            'lstm_training_progress': 'LSTM training loss progression',
             'model_comparison': 'ML model performance comparison',
             'ensemble_model_analysis': 'Stacking ensemble analysis',
             'ml_dashboard': 'Comprehensive ML-MCDM analysis dashboard'

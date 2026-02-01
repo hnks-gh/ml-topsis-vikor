@@ -1568,9 +1568,14 @@ class PanelVisualizer:
     def plot_topsis_scores_bar(self,
                                scores: np.ndarray,
                                entity_names: List[str],
-                               title: str = 'TOPSIS Scores Ranking',
-                               save_name: str = '04_topsis_scores.png') -> Optional[str]:
-        """Plot TOPSIS scores as horizontal bar chart."""
+                               title: str = 'MCDM Scores Ranking',
+                               save_name: str = '04_mcdm_scores.png') -> Optional[str]:
+        """
+        Plot MCDM scores as horizontal bar chart.
+        
+        Works for any MCDM method (TOPSIS, VIKOR, PROMETHEE, etc.).
+        Method name kept as 'plot_topsis_scores_bar' for compatibility.
+        """
         if not HAS_MATPLOTLIB:
             return None
         
@@ -1590,7 +1595,7 @@ class PanelVisualizer:
         
         ax.set_yticks(range(n_show))
         ax.set_yticklabels(sorted_names[:n_show], fontsize=10)
-        ax.set_xlabel('TOPSIS Score', fontsize=12, fontweight='bold')
+        ax.set_xlabel('MCDM Score', fontsize=12, fontweight='bold')
         ax.set_title(title, fontsize=14, fontweight='bold', pad=15)
         ax.invert_yaxis()
         ax.grid(True, alpha=0.3, axis='x')
@@ -1955,9 +1960,9 @@ class PanelVisualizer:
         entities : List[str]
             Entity names
         current_scores : np.ndarray
-            Current year TOPSIS scores
+            Current year MCDM scores (from any method)
         predicted_scores : np.ndarray
-            Predicted future year TOPSIS scores
+            Predicted future year MCDM scores
         prediction_year : int
             The year being predicted
         """
@@ -1983,8 +1988,8 @@ class PanelVisualizer:
                 fontsize=11, verticalalignment='top', 
                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
         
-        ax.set_xlabel('Current TOPSIS Score (2024)', fontsize=11, fontweight='bold')
-        ax.set_ylabel(f'Predicted TOPSIS Score ({prediction_year})', fontsize=11, fontweight='bold')
+        ax.set_xlabel('Current MCDM Score (2024)', fontsize=11, fontweight='bold')
+        ax.set_ylabel(f'Predicted MCDM Score ({prediction_year})', fontsize=11, fontweight='bold')
         ax.set_title('Score Stability Analysis', fontsize=12, fontweight='bold')
         ax.legend(loc='lower right', fontsize=10)
         ax.grid(True, alpha=0.3)
@@ -2006,7 +2011,7 @@ class PanelVisualizer:
         
         ax.set_yticks(y_pos)
         ax.set_yticklabels([f'{i+1}. {n}' for i, n in enumerate(names)], fontsize=10)
-        ax.set_xlabel('TOPSIS Score', fontsize=11, fontweight='bold')
+        ax.set_xlabel('MCDM Score', fontsize=11, fontweight='bold')
         ax.set_title(f'Top 20 Predicted Rankings for {prediction_year}', fontsize=12, fontweight='bold')
         ax.legend(loc='lower right', fontsize=10)
         ax.invert_yaxis()

@@ -105,13 +105,18 @@ class PipelineResult:
 
 class MLTOPSISPipeline:
     """
-    Production-grade ML-MCDM pipeline for panel data analysis.
+    Production-grade ML-MCDM pipeline for panel data analysis with multiple methods.
+    
+    Note: Class name retained as 'MLTOPSISPipeline' for backward compatibility,
+    but now supports 10 MCDM methods (5 traditional + 5 fuzzy).
     
     Integrates:
     - Multiple weighting methods (Entropy, CRITIC, Ensemble)
-    - Multiple MCDM methods (TOPSIS, Dynamic TOPSIS, VIKOR, Fuzzy TOPSIS)
-    - Multiple ML methods (Panel Regression, Random Forest, LSTM, Rough Sets)
-    - Ensemble methods (Stacking, Rank Aggregation)
+    - 10 MCDM methods:
+      * Traditional: TOPSIS, VIKOR, PROMETHEE, COPRAS, EDAS
+      * Fuzzy: Fuzzy TOPSIS, Fuzzy VIKOR, Fuzzy PROMETHEE, Fuzzy COPRAS, Fuzzy EDAS
+    - Advanced ML forecasting (Unified ensemble with RF, GB, Neural Networks, Bayesian)
+    - Ensemble aggregation (Stacking, Borda Count, Copeland, Kemeny)
     - Comprehensive analysis (Convergence, Sensitivity, Validation)
     
     Outputs:
@@ -134,9 +139,9 @@ class MLTOPSISPipeline:
         # Setup clean output directory structure
         self._setup_output_directory()
         
-        # Setup logging with file rotation and clean formatting
-        log_file = Path(self.config.output_dir) / 'logs' / 'pipeline.log'
-        self.logger = setup_logger('ml_mcdm', log_file=log_file)
+        # Setup logging: INFO level console (simple text), DEBUG level to debug.log
+        debug_file = Path(self.config.output_dir) / 'logs' / 'debug.log'
+        self.logger = setup_logger('ml_mcdm', debug_file=debug_file)
         
         self.visualizer = PanelVisualizer(
             output_dir=str(Path(self.config.output_dir) / 'figures'),

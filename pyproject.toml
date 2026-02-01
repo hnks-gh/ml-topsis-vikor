@@ -5,20 +5,17 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ML-MCDM"
 version = "2.0.0"
-description = "ML-Enhanced TOPSIS Framework for Panel Data Multi-Criteria Decision Analysis"
+description = "Machine Learning Enhanced Multi-Criteria Decision Making with 10 MCDM Methods (Traditional & Fuzzy)"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
 authors = [
-    {name = "ML-MCDM Development Team"}
+    {name = "Son Hoang"}
 ]
 keywords = [
-    "TOPSIS",
     "MCDM",
     "multi-criteria decision making",
-    "panel data",
-    "machine learning",
-    "sustainability assessment"
+    "machine learning"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -39,8 +36,6 @@ dependencies = [
     "scipy>=1.7.0,<2.0.0",
     "scikit-learn>=1.0.0,<2.0.0",
     "matplotlib>=3.4.0,<4.0.0",
-    "seaborn>=0.11.0,<0.14.0",
-    "tqdm>=4.62.0",
 ]
 
 [project.optional-dependencies]
@@ -53,13 +48,7 @@ dev = [
 ]
 full = [
     "shap>=0.40.0",
-    "factor-analyzer>=0.4.0",
 ]
-
-[project.urls]
-Homepage = "https://github.com/ML-MCDM/ML-MCDM"
-Documentation = "https://github.com/ML-MCDM/ML-MCDM#readme"
-Repository = "https://github.com/ML-MCDM/ML-MCDM"
 
 [tool.setuptools.packages.find]
 where = ["."]

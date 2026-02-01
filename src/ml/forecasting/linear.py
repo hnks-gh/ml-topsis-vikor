@@ -15,6 +15,7 @@ These methods are useful for:
 import numpy as np
 from typing import Optional, Tuple
 from sklearn.linear_model import BayesianRidge, HuberRegressor, Ridge
+from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import StandardScaler
 
 from .base import BaseForecaster
@@ -52,7 +53,7 @@ class BayesianForecaster(BaseForecaster):
         self.lambda_2 = lambda_2
         self.max_iter = max_iter
         
-        self.model = BayesianRidge(
+        self._base_model = BayesianRidge(
             alpha_1=alpha_1,
             alpha_2=alpha_2,
             lambda_1=lambda_1,
@@ -60,15 +61,29 @@ class BayesianForecaster(BaseForecaster):
             max_iter=max_iter,
             compute_score=True
         )
+        self.model = None  # Will be set during fit
         self.scaler = StandardScaler()
         self.feature_importance_: Optional[np.ndarray] = None
+        self._is_multi_output = False
     
     def fit(self, X: np.ndarray, y: np.ndarray) -> 'BayesianForecaster':
         """Fit the Bayesian Ridge model."""
         X_scaled = self.scaler.fit_transform(X)
-        self.model.fit(X_scaled, y.ravel() if y.ndim > 1 else y)
-        # Use absolute coefficient values as importance
-        self.feature_importance_ = np.abs(self.model.coef_)
+        
+        # Handle multi-output case
+        if y.ndim > 1 and y.shape[1] > 1:
+            self._is_multi_output = True
+            self.model = MultiOutputRegressor(self._base_model)
+            self.model.fit(X_scaled, y)
+            # Average importance across outputs
+            self.feature_importance_ = np.mean(
+                [np.abs(est.coef_) for est in self.model.estimators_], axis=0
+            )
+        else:
+            self._is_multi_output = False
+            self.model = self._base_model
+            self.model.fit(X_scaled, y.ravel() if y.ndim > 1 else y)
+            self.feature_importance_ = np.abs(self.model.coef_)
         return self
     
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -130,19 +145,34 @@ class HuberForecaster(BaseForecaster):
         self.max_iter = max_iter
         self.alpha = alpha
         
-        self.model = HuberRegressor(
+        self._base_model = HuberRegressor(
             epsilon=epsilon,
             max_iter=max_iter,
             alpha=alpha
         )
+        self.model = None  # Will be set during fit
         self.scaler = StandardScaler()
         self.feature_importance_: Optional[np.ndarray] = None
+        self._is_multi_output = False
     
     def fit(self, X: np.ndarray, y: np.ndarray) -> 'HuberForecaster':
         """Fit the Huber regression model."""
         X_scaled = self.scaler.fit_transform(X)
-        self.model.fit(X_scaled, y.ravel() if y.ndim > 1 else y)
-        self.feature_importance_ = np.abs(self.model.coef_)
+        
+        # Handle multi-output case
+        if y.ndim > 1 and y.shape[1] > 1:
+            self._is_multi_output = True
+            self.model = MultiOutputRegressor(self._base_model)
+            self.model.fit(X_scaled, y)
+            # Average importance across outputs
+            self.feature_importance_ = np.mean(
+                [np.abs(est.coef_) for est in self.model.estimators_], axis=0
+            )
+        else:
+            self._is_multi_output = False
+            self.model = self._base_model
+            self.model.fit(X_scaled, y.ravel() if y.ndim > 1 else y)
+            self.feature_importance_ = np.abs(self.model.coef_)
         return self
     
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -196,10 +226,15 @@ class RidgeForecaster(BaseForecaster):
         self.feature_importance_: Optional[np.ndarray] = None
     
     def fit(self, X: np.ndarray, y: np.ndarray) -> 'RidgeForecaster':
-        """Fit the Ridge regression model."""
+        """Fit the Ridge regression model (supports multi-output natively)."""
         X_scaled = self.scaler.fit_transform(X)
-        self.model.fit(X_scaled, y.ravel() if y.ndim > 1 else y)
-        self.feature_importance_ = np.abs(self.model.coef_)
+        # Ridge supports multi-output natively
+        self.model.fit(X_scaled, y)
+        # Handle multi-output coefficients
+        if self.model.coef_.ndim > 1:
+            self.feature_importance_ = np.mean(np.abs(self.model.coef_), axis=0)
+        else:
+            self.feature_importance_ = np.abs(self.model.coef_)
         return self
     
     def predict(self, X: np.ndarray) -> np.ndarray:
