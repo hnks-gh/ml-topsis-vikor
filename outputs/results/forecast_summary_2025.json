@@ -14,7 +14,7 @@
   "mean_predicted_score": 0.5095357245354061,
   "model_contributions": {
     "GradientBoosting": 0.35579495484406376,
-    "RandomForest": 5.89758910701273e-06,
+    "RandomForest": 5.897589107012751e-06,
     "BayesianRidge": 0.41001755764217157,
     "Huber": 0.23418158992465768
   }
