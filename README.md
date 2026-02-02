@@ -1,10 +1,8 @@
-# ML-MCDM Framework v2.0
-
-Machine Learning Enhanced Multi-Criteria Decision Making with Multiple Methods for Panel Data Analysis.
+Stacked Ensemble of Fuzzy MCDM and Random Forest Forecasting for Robust Sustainable Development Assessment: Application to Vietnamese Provinces
 
 ## Overview
 
-This framework integrates **10 MCDM methods** (5 traditional + 5 fuzzy variants) with **advanced Machine Learning** to rank entities (provinces) across multiple time periods and criteria. It combines multiple decision-making techniques with ensemble forecasting for comprehensive analysis and robust future predictions.
+This framework integrates MCDM methods (5 traditional + 5 fuzzy variants) with Machine Learning to rank provinces across multiple criteria. It combines multiple decision-making techniques with ensemble forecasting for comprehensive analysis and robust future predictions.
 
 ```
 Panel Data (64 provinces × 5 years × 20 criteria)
