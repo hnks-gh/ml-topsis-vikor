@@ -3,34 +3,24 @@
 Weighting Methods Module
 
 Objective weight calculation methods for MCDM:
-- Entropy Weights: Information theory-based weighting
-- CRITIC Weights: Criteria Importance Through Inter-criteria Correlation
-- PCA Weights: Principal Component Analysis-based multivariate weighting
-- Ensemble Weights: Advanced combined weighting (hybrid, game theory, Bayesian)
-- Panel-Aware Weights: Enhanced methods utilizing panel data structure (time + cross-section)
+- RobustGlobalWeighting: 7-step global hybrid pipeline (PCA-CRITIC-Entropy
+    + KL-Divergence Fusion + Bayesian Bootstrap) — PRIMARY METHOD
+- Entropy Weights: Information theory-based weighting (standalone utility)
+- CRITIC Weights: Criteria Importance Through Inter-criteria Correlation (standalone utility)
+- PCA Weights: Principal Component Analysis-based multivariate weighting (standalone utility)
 """
 
+from .robust_global import RobustGlobalWeighting
 from .entropy import EntropyWeightCalculator
 from .critic import CRITICWeightCalculator
 from .pca import PCAWeightCalculator
-from .ensemble import EnsembleWeightCalculator
-from .panel_weighting import (
-    PanelEntropyCalculator,
-    PanelCRITICCalculator,
-    PanelPCACalculator,
-    PanelEnsembleCalculator
-)
 from .base import WeightResult, calculate_weights
 
 __all__ = [
     'WeightResult',
+    'RobustGlobalWeighting',
     'EntropyWeightCalculator',
     'CRITICWeightCalculator',
     'PCAWeightCalculator',
-    'EnsembleWeightCalculator',
-    'PanelEntropyCalculator',
-    'PanelCRITICCalculator',
-    'PanelPCACalculator',
-    'PanelEnsembleCalculator',
     'calculate_weights'
 ]

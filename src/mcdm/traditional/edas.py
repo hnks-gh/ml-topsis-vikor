@@ -20,7 +20,7 @@ from typing import Dict, List, Optional, Union
 from dataclasses import dataclass
 from scipy import stats
 
-from ...weighting import WeightResult, EnsembleWeightCalculator
+from ...weighting import WeightResult, EntropyWeightCalculator
 
 
 @dataclass
@@ -136,7 +136,7 @@ class EDASCalculator:
         """
         # Get weights
         if weights is None:
-            weight_calc = EnsembleWeightCalculator()
+            weight_calc = EntropyWeightCalculator()
             weight_result = weight_calc.calculate(data)
             weights = weight_result.weights
         elif isinstance(weights, WeightResult):

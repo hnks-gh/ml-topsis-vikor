@@ -35,7 +35,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from dataclasses import dataclass
 
 from .base import TriangularFuzzyNumber, FuzzyDecisionMatrix
-from ...weighting import EnsembleWeightCalculator, WeightResult
+from ...weighting import EntropyWeightCalculator, WeightResult
 
 
 @dataclass
@@ -175,7 +175,7 @@ class FuzzyPROMETHEE:
         # Get weights
         if weights is None:
             crisp_data = fuzzy_matrix.to_crisp(self.defuzzification)
-            weight_calc = EnsembleWeightCalculator()
+            weight_calc = EntropyWeightCalculator()
             weight_result = weight_calc.calculate(crisp_data)
             weights = weight_result.weights
         elif isinstance(weights, WeightResult):

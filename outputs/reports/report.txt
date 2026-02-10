@@ -5,16 +5,16 @@
 
 ====================================================================================================
 
-Report Generated: 2026-02-10 00:59:25
-Analysis Period: 2020 - 2024
-Computational Time: 202.71 seconds
+Report Generated: 2026-02-10 23:52:57
+Analysis Period: 2011 - 2024
+Computational Time: 450.37 seconds
 
 ----------------------------------------------------------------------------------------------------
 EXECUTIVE SUMMARY
 ----------------------------------------------------------------------------------------------------
 
 This report presents a comprehensive multi-criteria decision making (MCDM) analysis
-of 64 regional entities across 5 time periods (2020-2024),
+of 64 regional entities across 14 time periods (2011-2024),
 evaluating performance based on 20 sustainability criteria.
 
 KEY FINDINGS:
@@ -22,15 +22,15 @@ KEY FINDINGS:
   1. TOP PERFORMER: P14 consistently ranks as the leading entity across
      all MCDM methods, demonstrating superior performance in sustainability metrics.
 
-  2. METHOD AGREEMENT: Kendall's W coefficient of 0.9653 indicates excellent
+  2. METHOD AGREEMENT: Kendall's W coefficient of 0.9709 indicates excellent
      agreement among the 10+ MCDM methods employed, providing high confidence in
      the robustness of our rankings.
 
-  3. PREDICTIVE ACCURACY: Machine learning models achieve R² = 0.9661, demonstrating
+  3. PREDICTIVE ACCURACY: Machine learning models achieve R² = 0.9009, demonstrating
      strong capability to explain and forecast sustainability performance patterns.
 
   4. FORECAST: P14 is predicted to maintain top performance in 2025,
-     with an expected TOPSIS score of 0.8568.
+     with an expected TOPSIS score of 0.8402.
 
 
 ====================================================================================================
@@ -49,9 +49,9 @@ uncertainty, and machine learning for pattern recognition and forecasting.
 --------------------------------------------------
 
   • Entities Analyzed: 64 regional units (provinces/regions)
-  • Temporal Coverage: 5 years (2020-2024)
+  • Temporal Coverage: 14 years (2011-2024)
   • Evaluation Criteria: 20 sustainability components
-  • Total Observations: 320 entity-year records
+  • Total Observations: 896 entity-year records
 
 1.3 Methodological Framework
 --------------------------------------------------
@@ -91,18 +91,18 @@ each criterion. Criteria with greater variation carry more information and recei
 higher weights.
 
   Statistical Summary:
-    Minimum Weight: 0.030827
-    Maximum Weight: 0.065690
+    Minimum Weight: 0.030801
+    Maximum Weight: 0.070749
     Mean Weight: 0.050000
-    Standard Deviation: 0.009253
-    Weight Concentration (Max/Min ratio): 2.13x
+    Standard Deviation: 0.009367
+    Weight Concentration (Max/Min ratio): 2.30x
 
   Top 5 Most Important Criteria:
-    1. C02: 0.065690 (6.6% of total)
-    2. C01: 0.064433 (6.4% of total)
-    3. C17: 0.060178 (6.0% of total)
-    4. C05: 0.059405 (5.9% of total)
-    5. C14: 0.055295 (5.5% of total)
+    1. C14: 0.070749 (7.1% of total)
+    2. C16: 0.063366 (6.3% of total)
+    3. C20: 0.061820 (6.2% of total)
+    4. C02: 0.060457 (6.0% of total)
+    5. C11: 0.054371 (5.4% of total)
 
 2.2 CRITIC Weights
 --------------------------------------------------
@@ -111,18 +111,18 @@ the contrast intensity (standard deviation) and conflicting relationships betwee
 criteria to determine weights.
 
   Statistical Summary:
-    Minimum Weight: 0.040515
-    Maximum Weight: 0.079180
+    Minimum Weight: 0.044127
+    Maximum Weight: 0.056289
     Mean Weight: 0.050000
-    Standard Deviation: 0.008284
-    Weight Concentration (Max/Min ratio): 1.95x
+    Standard Deviation: 0.003380
+    Weight Concentration (Max/Min ratio): 1.28x
 
   Top 5 Most Important Criteria:
-    1. C01: 0.079180 (7.9% of total)
-    2. C02: 0.059612 (6.0% of total)
-    3. C04: 0.058190 (5.8% of total)
-    4. C03: 0.055283 (5.5% of total)
-    5. C05: 0.052789 (5.3% of total)
+    1. C16: 0.056289 (5.6% of total)
+    2. C20: 0.054721 (5.5% of total)
+    3. C14: 0.054519 (5.5% of total)
+    4. C17: 0.054230 (5.4% of total)
+    5. C19: 0.053559 (5.4% of total)
 
 2.3 PCA Weights
 --------------------------------------------------
@@ -131,18 +131,18 @@ the data. Weights reflect each criterion's contribution to the principal compone
 weighted by explained variance ratios.
 
   Statistical Summary:
-    Minimum Weight: 0.044586
-    Maximum Weight: 0.055118
+    Minimum Weight: 0.042203
+    Maximum Weight: 0.058609
     Mean Weight: 0.050000
-    Standard Deviation: 0.002460
-    Weight Concentration (Max/Min ratio): 1.24x
+    Standard Deviation: 0.003900
+    Weight Concentration (Max/Min ratio): 1.39x
 
   Top 5 Most Important Criteria:
-    1. C01: 0.055118 (5.5% of total)
-    2. C04: 0.053754 (5.4% of total)
-    3. C03: 0.053167 (5.3% of total)
-    4. C09: 0.052253 (5.2% of total)
-    5. C11: 0.052017 (5.2% of total)
+    1. C01: 0.058609 (5.9% of total)
+    2. C11: 0.055050 (5.5% of total)
+    3. C17: 0.054244 (5.4% of total)
+    4. C10: 0.053244 (5.3% of total)
+    5. C14: 0.052581 (5.3% of total)
 
 2.4 ENSEMBLE Weights
 --------------------------------------------------
@@ -150,21 +150,21 @@ Ensemble weights combine Entropy, CRITIC and PCA methods through the integrated
 hybrid strategy to leverage the strengths of each individual approach.
 
   Statistical Summary:
-    Minimum Weight: 0.033201
-    Maximum Weight: 0.063755
+    Minimum Weight: 0.046713
+    Maximum Weight: 0.053705
     Mean Weight: 0.050000
-    Standard Deviation: 0.008041
-    Weight Concentration (Max/Min ratio): 1.92x
+    Standard Deviation: 0.001702
+    Weight Concentration (Max/Min ratio): 1.15x
 
   Top 5 Most Important Criteria:
-    1. C02: 0.063755 (6.4% of total)
-    2. C01: 0.062729 (6.3% of total)
-    3. C17: 0.058615 (5.9% of total)
-    4. C05: 0.058069 (5.8% of total)
-    5. C14: 0.054829 (5.5% of total)
+    1. C14: 0.053705 (5.4% of total)
+    2. C01: 0.052165 (5.2% of total)
+    3. C17: 0.052157 (5.2% of total)
+    4. C11: 0.051760 (5.2% of total)
+    5. C16: 0.051699 (5.2% of total)
 
 INTERPRETATION:
-The ensemble weighting identifies C02, C01, C17 as the most critical criteria
+The ensemble weighting identifies C14, C01, C17 as the most critical criteria
 for sustainability assessment. These criteria exhibit both high variability and
 significant discriminatory power, making them essential factors in distinguishing
 high-performing entities from lower-performing ones.
@@ -182,27 +182,27 @@ solution and farthest from the negative ideal solution. Scores range from 0 to 1
 where higher values indicate better overall performance.
 
   Performance Distribution:
-    Best Score: 0.810601
-    Worst Score: 0.221819
-    Mean Score: 0.492225
-    Median Score: 0.468948
-    Standard Deviation: 0.171632
-    Coefficient of Variation: 34.9%
+    Best Score: 0.813066
+    Worst Score: 0.232099
+    Mean Score: 0.494317
+    Median Score: 0.468616
+    Standard Deviation: 0.172885
+    Coefficient of Variation: 35.0%
 
   Top 10 Performing Entities:
   ----------------------------------------------------------------------
   Rank   Entity          TOPSIS Score    Performance Level
   ----------------------------------------------------------------------
-  1      P14             0.810601        Excellent
-  2      P06             0.784224        Excellent
-  3      P13             0.778103        Excellent
-  4      P08             0.773155        Excellent
-  5      P01             0.770735        Excellent
-  6      P05             0.769024        Excellent
-  7      P04             0.768994        Excellent
-  8      P07             0.765601        Excellent
-  9      P03             0.759234        Excellent
-  10     P10             0.757228        Excellent
+  1      P14             0.813066        Excellent
+  2      P13             0.784390        Excellent
+  3      P06             0.782100        Excellent
+  4      P04             0.771570        Excellent
+  5      P08             0.767600        Excellent
+  6      P07             0.765185        Excellent
+  7      P03             0.764583        Excellent
+  8      P05             0.764209        Excellent
+  9      P01             0.763949        Excellent
+  10     P10             0.762931        Excellent
   ----------------------------------------------------------------------
 
 3.2 VIKOR (Multi-Criteria Optimization and Compromise Solution)
@@ -212,24 +212,24 @@ VIKOR focuses on ranking and selecting alternatives with conflicting criteria,
 emphasizing compromise solutions. Lower Q values indicate better performance.
 
   VIKOR Metrics Summary:
-    Q (Compromise) Range: [0.000000, 0.978698]
-    S (Group Utility) Range: [0.160886, 0.805142]
-    R (Individual Regret) Range: [0.018064, 0.063755]
+    Q (Compromise) Range: [0.000000, 0.986428]
+    S (Group Utility) Range: [0.159124, 0.802723]
+    R (Individual Regret) Range: [0.015965, 0.053705]
 
   Top 10 VIKOR Rankings (lowest Q = best):
   --------------------------------------------------------------------------------
   Rank   Entity       Q Value      S Value      R Value      Status
   --------------------------------------------------------------------------------
-  1      P14          0.000000     0.160886     0.018064     Best Compromise
-  2      P01          0.083559     0.209985     0.022217     -
-  3      P05          0.089592     0.215780     0.022358     -
-  4      P06          0.095890     0.178046     0.025609     -
-  5      P07          0.098389     0.206987     0.023785     -
-  6      P08          0.100877     0.210384     0.023772     -
-  7      P04          0.101274     0.210523     0.023798     -
-  8      P15          0.109971     0.239954     0.022506     -
-  9      P13          0.110132     0.180685     0.026724     -
-  10     P12          0.120500     0.250162     0.022744     -
+  1      P14          0.000000     0.159124     0.015965     Best Compromise
+  2      P06          0.087075     0.185318     0.021002     -
+  3      P12          0.111031     0.241540     0.019513     -
+  4      P01          0.111242     0.211865     0.021269     -
+  5      P08          0.116670     0.213634     0.021575     -
+  6      P04          0.122030     0.207846     0.022319     -
+  7      P05          0.123485     0.214739     0.022025     -
+  8      P07          0.131759     0.207682     0.023063     -
+  9      P13          0.132111     0.178275     0.024814     -
+  10     P15          0.156004     0.243686     0.022782     -
   --------------------------------------------------------------------------------
 
 3.3 Fuzzy TOPSIS
@@ -239,8 +239,8 @@ Fuzzy TOPSIS extends classical TOPSIS by representing criteria values as triangu
 fuzzy numbers, capturing temporal variance and measurement uncertainty. This approach
 provides more robust rankings under data imprecision.
 
-  Fuzzy Score Range: [0.194389, 0.834004]
-  Mean Fuzzy Score: 0.493341
+  Fuzzy Score Range: [0.197715, 0.835427]
+  Mean Fuzzy Score: 0.493787
 
 3.4 Dynamic TOPSIS (Panel-Aware Extension)
 --------------------------------------------------
@@ -250,15 +250,15 @@ Dynamic TOPSIS incorporates temporal dynamics by considering:
   • Stability weighting: Consistency of performance across periods
   • Temporal discounting: Greater emphasis on recent performance
 
-  Dynamic Score Range: [0.148649, 0.810569]
-  Mean Dynamic Score: 0.558362
+  Dynamic Score Range: [0.271571, 0.804770]
+  Mean Dynamic Score: 0.548351
 
 3.5 Cross-Method Validation
 --------------------------------------------------
 
 To validate ranking robustness, we compare results across all MCDM methods:
 
-  TOPSIS vs VIKOR Spearman Correlation: 0.9417
+  TOPSIS vs VIKOR Spearman Correlation: 0.9397
   Interpretation: Excellent agreement between classical MCDM methods
 
 
@@ -274,16 +274,16 @@ TOPSIS scores from criteria values. This analysis identifies which criteria most
 strongly influence overall sustainability rankings.
 
   Model Performance Metrics:
-    Test R-squared: 0.966146
-    Test MAE: 0.024660
-    Test RMSE: 0.031579
-    Rank Correlation (Spearman): 0.971703
+    Test R-squared: 0.900887
+    Test MAE: 0.044399
+    Test RMSE: 0.054428
+    Rank Correlation (Spearman): 0.958425
 
   Cross-Validation Results (Time-Series Split):
-    R2: 0.965052 ± 0.001094
-    MSE: 0.001029 ± 0.000032
-    MAE: 0.025527 ± 0.000866
-    RANK_CORR: 0.969299 ± 0.002404
+    R2: 0.920374 ± 0.019932
+    MSE: 0.002380 ± 0.000596
+    MAE: 0.040258 ± 0.005921
+    RANK_CORR: 0.967685 ± 0.008887
 
   INTERPRETATION:
   The model demonstrates excellent predictive power, explaining over 90% of variance.
@@ -292,26 +292,26 @@ strongly influence overall sustainability rankings.
   ------------------------------------------------------------
   Rank   Criterion       Importance   Cumulative %
   ------------------------------------------------------------
-  1      C17             0.147219     14.7%
-  2      C14             0.136172     28.3%
-  3      C15             0.118497     40.2%
-  4      C16             0.090862     49.3%
-  5      C08             0.057535     55.0%
-  6      C03             0.054922     60.5%
-  7      C20             0.053147     65.8%
-  8      C19             0.052721     71.1%
-  9      C05             0.042171     75.3%
-  10     C13             0.041500     79.5%
-  11     C06             0.038024     83.3%
-  12     C11             0.034752     86.8%
-  13     C18             0.029626     89.7%
-  14     C09             0.027994     92.5%
-  15     C12             0.022898     94.8%
+  1      C17             0.167736     16.8%
+  2      C15             0.141288     30.9%
+  3      C14             0.114618     42.4%
+  4      C16             0.085900     51.0%
+  5      C18             0.068845     57.8%
+  6      C05             0.052940     63.1%
+  7      C19             0.047949     67.9%
+  8      C20             0.045399     72.5%
+  9      C11             0.039224     76.4%
+  10     C13             0.036724     80.1%
+  11     C12             0.034343     83.5%
+  12     C03             0.033968     86.9%
+  13     C08             0.031654     90.1%
+  14     C06             0.029531     93.0%
+  15     C02             0.025767     95.6%
   ------------------------------------------------------------
 
   KEY INSIGHT:
-  The top 3 criteria (C17, C14, C15) account for
-  40.2% of the total feature importance, indicating these are the
+  The top 3 criteria (C17, C15, C14) account for
+  42.4% of the total feature importance, indicating these are the
   primary drivers of sustainability performance differentiation.
 
 
@@ -325,19 +325,19 @@ strongly influence overall sustainability rankings.
 A stacking ensemble combines predictions from all base MCDM methods using a
 regularized meta-learner to optimize the final score predictions.
 
-  Meta-Model Performance (R²): -0.219026
+  Meta-Model Performance (R²): -0.210124
 
   Base Model Contribution Weights:
   --------------------------------------------------
-    PROMETHEE           : 0.1695 ██████
-    Fuzzy_PROMETHEE     : 0.1645 ██████
-    EDAS                : 0.1224 ████
-    Fuzzy_EDAS          : 0.1224 ████
-    Fuzzy_VIKOR         : 0.0982 ███
-    VIKOR_Q             : 0.0973 ███
-    Fuzzy_TOPSIS        : 0.0804 ███
-    TOPSIS              : 0.0797 ███
-    Dynamic_TOPSIS      : 0.0629 ██
+    PROMETHEE           : 0.1700 ██████
+    Fuzzy_PROMETHEE     : 0.1631 ██████
+    Fuzzy_EDAS          : 0.1222 ████
+    EDAS                : 0.1222 ████
+    Fuzzy_VIKOR         : 0.1033 ████
+    VIKOR_Q             : 0.1033 ████
+    Fuzzy_TOPSIS        : 0.0798 ███
+    TOPSIS              : 0.0757 ███
+    Dynamic_TOPSIS      : 0.0578 ██
     Fuzzy_COPRAS        : 0.0014 
     COPRAS              : 0.0014 
   --------------------------------------------------
@@ -349,77 +349,77 @@ Borda count aggregation combines rankings from all MCDM methods by assigning
 points based on rank position. This produces a consensus ranking that reflects
 agreement across multiple methodological perspectives.
 
-  Kendall's W (Inter-Method Agreement): 0.965251
+  Kendall's W (Inter-Method Agreement): 0.970937
   Interpretation: excellent agreement - rankings are highly consistent across methods
 
   FINAL CONSENSUS RANKINGS:
   ======================================================================
   Rank   Entity          Borda Score     Percentile
   ======================================================================
-  1      P14             62.3636         ★★★ Top 10%
-  2      P06             61.0909         ★★★ Top 10%
-  3      P13             60.4545         ★★★ Top 10%
-  4      P01             57.9091         ★★★ Top 10%
-  5      P08             57.8182         ★★★ Top 10%
-  6      P07             57.1818         ★★★ Top 10%
-  7      P03             56.9091         ★★★ Top 10%
-  8      P10             56.8182         ★★ Top 25%
-  9      P04             56.7273         ★★ Top 25%
-  10     P05             55.6364         ★★ Top 25%
-  11     P15             54.0000         ★★ Top 25%
-  12     P12             51.6364         ★★ Top 25%
-  13     P09             50.2727         ★★ Top 25%
-  14     P02             50.1818         ★★ Top 25%
-  15     P11             49.3636         ★★ Top 25%
-  16     P16             48.2727         ★★ Top 25%
-  17     P27             46.5455         ★ Top 50%
-  18     P20             44.7273         ★ Top 50%
-  19     P26             44.0000         ★ Top 50%
-  20     P21             43.3636         ★ Top 50%
-  21     P40             42.5455         ★ Top 50%
-  22     P17             41.4545         ★ Top 50%
-  23     P37             39.8182         ★ Top 50%
-  24     P38             39.7273         ★ Top 50%
-  25     P25             38.2727         ★ Top 50%
-  26     P36             37.8182         ★ Top 50%
-  27     P48             35.0000         ★ Top 50%
-  28     P30             33.4545         ★ Top 50%
-  29     P29             33.0909         ★ Top 50%
-  30     P23             32.7273         ★ Top 50%
-  31     P41             32.5455         ★ Top 50%
-  32     P22             32.3636         ★ Top 50%
-  33     P18             31.0909         
-  34     P28             30.7273         
-  35     P44             29.7273         
-  36     P24             29.3636         
-  37     P46             27.0909         
-  38     P43             26.3636         
-  39     P47             25.2727         
-  40     P35             25.0000         
-  41     P19             24.9091         
-  42     P42             23.4545         
-  43     P31             23.2727         
-  44     P45             20.0000         
-  45     P32             19.8182         
-  46     P39             19.8182         
-  47     P34             17.9091         
-  48     P33             14.6364         
-  49     P51             13.8182         
-  50     P58             12.2727         
-  51     P62             11.8182         
-  52     P55             10.7273         
-  53     P59             10.2727         
-  54     P50             10.0000         
-  55     P63             10.0000         
-  56     P60             9.6364          
-  57     P56             8.3636          
-  58     P53             6.9091          
-  59     P57             6.2727          
-  60     P54             4.5455          
-  61     P64             4.0909          
-  62     P52             2.4545          
-  63     P49             1.3636          
-  64     P61             0.9091          
+  1      P14             62.4545         ★★★ Top 10%
+  2      P06             61.1818         ★★★ Top 10%
+  3      P13             60.9091         ★★★ Top 10%
+  4      P04             58.0000         ★★★ Top 10%
+  5      P03             57.7273         ★★★ Top 10%
+  6      P10             57.3636         ★★★ Top 10%
+  7      P08             57.1818         ★★★ Top 10%
+  8      P07             57.0000         ★★ Top 25%
+  9      P01             56.7273         ★★ Top 25%
+  10     P05             54.9091         ★★ Top 25%
+  11     P12             53.1818         ★★ Top 25%
+  12     P15             53.0000         ★★ Top 25%
+  13     P02             50.4545         ★★ Top 25%
+  14     P11             50.0909         ★★ Top 25%
+  15     P09             49.4545         ★★ Top 25%
+  16     P16             48.3636         ★★ Top 25%
+  17     P27             46.9091         ★ Top 50%
+  18     P20             45.8182         ★ Top 50%
+  19     P26             44.4545         ★ Top 50%
+  20     P21             44.2727         ★ Top 50%
+  21     P38             43.0909         ★ Top 50%
+  22     P40             40.1818         ★ Top 50%
+  23     P25             40.0909         ★ Top 50%
+  24     P17             38.4545         ★ Top 50%
+  25     P37             38.0909         ★ Top 50%
+  26     P36             37.1818         ★ Top 50%
+  27     P29             35.0000         ★ Top 50%
+  28     P41             33.9091         ★ Top 50%
+  29     P28             31.9091         ★ Top 50%
+  30     P18             31.4545         ★ Top 50%
+  31     P22             31.4545         ★ Top 50%
+  32     P23             31.3636         ★ Top 50%
+  33     P24             31.2727         
+  34     P48             31.0909         
+  35     P44             30.5455         
+  36     P43             28.0000         
+  37     P46             27.6364         
+  38     P47             26.3636         
+  39     P30             25.4545         
+  40     P31             24.9091         
+  41     P39             23.8182         
+  42     P35             23.1818         
+  43     P42             22.7273         
+  44     P45             22.0000         
+  45     P32             20.8182         
+  46     P19             20.4545         
+  47     P34             18.7273         
+  48     P33             15.6364         
+  49     P62             13.7273         
+  50     P51             13.6364         
+  51     P58             12.6364         
+  52     P55             11.0909         
+  53     P50             10.7273         
+  54     P59             10.6364         
+  55     P60             9.8182          
+  56     P63             8.5455          
+  57     P53             7.7273          
+  58     P56             6.7273          
+  59     P57             4.0000          
+  60     P52             3.9091          
+  61     P64             3.6364          
+  62     P54             3.2727          
+  63     P49             1.1818          
+  64     P61             0.4545          
   ======================================================================
 
 
@@ -434,25 +434,25 @@ Monte Carlo simulation with 1,000 random weight perturbations tests ranking
 stability. High sensitivity indices indicate criteria whose weights strongly
 influence final rankings.
 
-  Overall Robustness Score: 0.9516
+  Overall Robustness Score: 0.9522
   Interpretation: Rankings are highly stable - minor weight changes have minimal impact
 
   Criteria Sensitivity Index (normalized 0-1):
   ------------------------------------------------------------
     C01: 1.0000 ██████████████████████████████ [HIGH]
-    C02: 0.7692 ███████████████████████ [HIGH]
-    C05: 0.7333 ██████████████████████ [HIGH]
-    C03: 0.6974 ████████████████████ [HIGH]
-    C17: 0.5385 ████████████████ [MEDIUM]
-    C04: 0.5282 ███████████████ [MEDIUM]
-    C13: 0.4615 █████████████ [MEDIUM]
-    C19: 0.4564 █████████████ [MEDIUM]
-    C18: 0.4256 ████████████ [MEDIUM]
-    C08: 0.4154 ████████████ [MEDIUM]
+    C02: 0.7933 ███████████████████████ [HIGH]
+    C03: 0.7765 ███████████████████████ [HIGH]
+    C04: 0.7765 ███████████████████████ [HIGH]
+    C05: 0.7318 █████████████████████ [HIGH]
+    C16: 0.6369 ███████████████████ [HIGH]
+    C17: 0.6313 ██████████████████ [HIGH]
+    C08: 0.6145 ██████████████████ [HIGH]
+    C13: 0.6145 ██████████████████ [HIGH]
+    C07: 0.5866 █████████████████ [MEDIUM]
   ------------------------------------------------------------
 
   POLICY IMPLICATION:
-  Criteria C01, C02, C05 have high sensitivity. Policy interventions
+  Criteria C01, C02, C03 have high sensitivity. Policy interventions
   targeting these areas will have the greatest impact on rankings.
 
 
@@ -463,58 +463,58 @@ influence final rankings.
 7.1 Methodology
 --------------------------------------------------
 
-An ensemble of machine learning models was trained on 5 years of historical
-data (2020-2024) to forecast criteria values for 2025.
+An ensemble of machine learning models was trained on 14 years of historical
+data (2011-2024) to forecast criteria values for 2025.
 The ensemble combines Gradient Boosting, Bayesian Ridge, and Huber regression
 with automatic performance-based weighting.
 
   Model Contributions to Ensemble:
-    BayesianRidge       : 0.4721 ██████████████████
-    GradientBoosting    : 0.4097 ████████████████
-    Huber               : 0.1182 ████
+    BayesianRidge       : 0.8344 █████████████████████████████████
+    GradientBoosting    : 0.1650 ██████
+    Huber               : 0.0005 
     RandomForest        : 0.0000 
 
 7.2 Predicted Rankings for 2025
 --------------------------------------------------
 
   Predicted TOPSIS Score Distribution:
-    Best Predicted Score: 0.856834
-    Worst Predicted Score: 0.223283
-    Mean Predicted Score: 0.512682
-    Score Change from 2024: +0.020456
+    Best Predicted Score: 0.840194
+    Worst Predicted Score: 0.208767
+    Mean Predicted Score: 0.499585
+    Score Change from 2024: +0.005268
 
   Predicted Top 15 Rankings for 2025:
   ======================================================================
   Rank   Entity          Predicted Score    Change from 2024 
   ======================================================================
-  1      P14             0.856834           →
-  2      P08             0.815203           ↑2
-  3      P13             0.813544           →
-  4      P01             0.812983           ↑1
-  5      P06             0.811453           ↓3
-  6      P05             0.805103           →
-  7      P03             0.800702           ↑2
-  8      P15             0.797482           ↑3
-  9      P07             0.797474           ↓1
-  10     P04             0.790558           ↓3
-  11     P10             0.788773           ↓1
-  12     P09             0.765919           ↑1
-  13     P12             0.763930           ↓1
-  14     P11             0.746641           ↑1
-  15     P02             0.732340           ↓1
+  1      P14             0.840194           →
+  2      P13             0.802693           →
+  3      P06             0.796027           →
+  4      P05             0.789253           ↑4
+  5      P08             0.789196           →
+  6      P04             0.781923           ↓2
+  7      P03             0.781083           →
+  8      P01             0.777648           ↑1
+  9      P10             0.776572           ↑1
+  10     P07             0.772503           ↓4
+  11     P15             0.755816           →
+  12     P12             0.746206           →
+  13     P09             0.743130           →
+  14     P11             0.732530           ↑1
+  15     P02             0.721459           ↓1
   ======================================================================
 
 7.3 Predicted VIKOR Analysis for 2025
 --------------------------------------------------
 
-  Predicted Q Value Range: [0.000000, 0.979855]
+  Predicted Q Value Range: [0.000000, 0.975199]
 
   Predicted VIKOR Top 5:
     1. P14: Q = 0.000000
-    2. P07: Q = 0.069893
-    3. P01: Q = 0.074068
-    4. P08: Q = 0.090830
-    5. P06: Q = 0.104869
+    2. P06: Q = 0.098505
+    3. P08: Q = 0.113655
+    4. P05: Q = 0.114362
+    5. P07: Q = 0.125241
 
 
 ====================================================================================================
@@ -526,37 +526,37 @@ with automatic performance-based weighting.
 
   1. PERFORMANCE LEADERS (2024):
      • P14 (Rank 1): Demonstrates excellence across
-       multiple sustainability dimensions with Borda score 62.36
+       multiple sustainability dimensions with Borda score 62.45
      • P06 (Rank 2): Demonstrates excellence across
-       multiple sustainability dimensions with Borda score 61.09
+       multiple sustainability dimensions with Borda score 61.18
      • P13 (Rank 3): Demonstrates excellence across
-       multiple sustainability dimensions with Borda score 60.45
+       multiple sustainability dimensions with Borda score 60.91
 
   2. AREAS FOR IMPROVEMENT:
      • P61 (Rank 64): Requires targeted
        interventions to improve sustainability performance
      • P49 (Rank 63): Requires targeted
        interventions to improve sustainability performance
-     • P52 (Rank 62): Requires targeted
+     • P54 (Rank 62): Requires targeted
        interventions to improve sustainability performance
 
   3. METHODOLOGICAL ROBUSTNESS:
-     • Excellent inter-method agreement (Kendall's W = 0.9653)
-     • ML model explains 96.6% of performance variance
+     • Excellent inter-method agreement (Kendall's W = 0.9709)
+     • ML model explains 90.1% of performance variance
      • Rankings show 95.2% robustness to weight perturbations
 
   4. FORECAST (2025):
-     • Mean predicted score: 0.5127
+     • Mean predicted score: 0.4996
      • Overall trend: Slight improvement expected
 
 8.2 Policy Recommendations
 --------------------------------------------------
 
-  1. PRIORITY FOCUS AREAS: C17, C14, C15
+  1. PRIORITY FOCUS AREAS: C17, C15, C14
      These criteria have the highest influence on sustainability rankings.
      Policy interventions should prioritize improvements in these areas.
 
-  2. SENSITIVE INDICATORS: C01, C02, C05
+  2. SENSITIVE INDICATORS: C01, C02, C03
      Rankings are most sensitive to these criteria weights.
      Ensure accurate measurement and appropriate weighting for these factors.
 
@@ -564,7 +564,7 @@ with automatic performance-based weighting.
 8.3 Limitations and Future Research
 --------------------------------------------------
 
-  • Data limited to 5 years; longer time series would improve forecasting accuracy
+  • Data limited to 14 years; longer time series would improve forecasting accuracy
   • Equal treatment of all criteria types (benefit/cost) may oversimplify
   • External factors (policy changes, economic shocks) not explicitly modeled
   • Future research should incorporate spatial spillover effects
@@ -576,8 +576,8 @@ APPENDIX: TECHNICAL SPECIFICATIONS
 
 A.1 Computational Environment
 --------------------------------------------------
-  Total Execution Time: 202.71 seconds
-  Report Generated: 2026-02-10 00:59:25
+  Total Execution Time: 450.37 seconds
+  Report Generated: 2026-02-10 23:52:57
 
 A.2 MCDM Method Parameters
 --------------------------------------------------

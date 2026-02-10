@@ -1,435 +1,234 @@
-# Weighting Methods for MCDM
+# Weighting Methods — Robust Global Hybrid
 
 ## Overview
 
-This module provides **objective weight calculation** methods for Multi-Criteria Decision Making (MCDM). It includes both **standard** and **panel-aware** implementations.
+This module provides **objective weight calculation** for Multi-Criteria Decision Making (MCDM) using a **Robust Global Hybrid Weighting** pipeline that operates on the entire panel dataset (all entities × all time periods) simultaneously.
 
 ## Key Changes (February 2026)
 
-### ✅ Improvements Made
+### New: Robust Global Hybrid Weighting Pipeline
 
-1. **Removed Simple Mean Ensemble Strategies**
-   - ❌ Removed: Arithmetic mean, Geometric mean, Harmonic mean
-   - ✅ Kept: Advanced strategies only (Game Theory, Bayesian Bootstrap, Integrated Hybrid)
-   - **Reason**: Simple means don't account for method reliability or structure
+Replaced all previous weighting methods (panel-aware, ensemble, game theory, 
+Bayesian bootstrap, integrated hybrid) with a single, unified 7-step pipeline 
+that is **more rigorous, scientifically grounded, and better suited for 
+correlated panel data**.
 
-2. **Individual Methods Validated**
-   - ✅ **Entropy**: Shannon entropy-based, measures information content
-   - ✅ **CRITIC**: Combines standard deviation & inter-criteria correlation
-   - ✅ **PCA**: Multivariate variance-covariance structure
-   - All implementations mathematically **verified and correct**
-
-3. **Advanced Ensemble Strategies Verified**
-   - ✅ **Game Theory**: Min-deviation optimization with entropy-based confidence
-   - ✅ **Bayesian Bootstrap**: Inverse-variance weighting (auto-downweights unstable methods)
-   - ✅ **Integrated Hybrid**: Three-stage PCA→CRITIC→Entropy integration (RECOMMENDED)
-
-4. **🎯 NEW: Panel-Aware Weighting Methods**
-   - Utilizes **BOTH** temporal and cross-sectional dimensions
-   - Accounts for **time-series patterns** and **spatial variation**
-   - Provides more robust weights for panel data
+| Before (Removed) | After (New) |
+|---|---|
+| Panel-aware Entropy/CRITIC/PCA with spatial-temporal split | Global panel operation (preserves temporal trends) |
+| Ensemble: arithmetic, geometric, integrated hybrid | KL-Divergence fusion (geometric mean, information-theoretic) |
+| Game theory: entropy-confidence heuristic | True 3-vector fusion (Entropy + CRITIC + PCA) |
+| Bayesian bootstrap: row resampling | Bayesian bootstrap: Dirichlet observation weights (Rubin, 1981) |
+| No stability verification | Split-half cosine similarity + Spearman correlation |
 
 ---
 
 ## Architecture
 
-### Standard Methods (Cross-Sectional Only)
-
-Use single time point (e.g., latest year):
-
 ```
 src/weighting/
-├── entropy.py          # EntropyWeightCalculator
-├── critic.py           # CRITICWeightCalculator
-├── pca.py              # PCAWeightCalculator
-└── ensemble.py         # EnsembleWeightCalculator (3 advanced strategies)
+├── robust_global.py    # RobustGlobalWeighting — PRIMARY (7-step pipeline)
+├── base.py             # WeightResult dataclass + calculate_weights() convenience
+├── entropy.py          # EntropyWeightCalculator (standalone utility)
+├── critic.py           # CRITICWeightCalculator (standalone utility)
+└── pca.py              # PCAWeightCalculator (standalone utility)
 ```
 
-### Panel-Aware Methods (Time + Cross-Section)
+**Primary class**: `RobustGlobalWeighting` — the only class used in the pipeline.
 
-**NEW**: Utilize full panel structure:
-
-```
-src/weighting/
-└── panel_weighting.py  # PanelEntropyCalculator
-                        # PanelCRITICCalculator
-                        # PanelPCACalculator
-                        # PanelEnsembleCalculator
-```
+**Standalone utilities**: `EntropyWeightCalculator`, `CRITICWeightCalculator`, 
+`PCAWeightCalculator` are retained for testing and ad-hoc analysis but are 
+**not called by the pipeline**.
 
 ---
 
-## Individual Weighting Methods
+## The 7-Step Pipeline
 
-### 1. Entropy Method
+### Step 1: Global Min-Max Normalization
 
-**Principle**: Higher weight to criteria with more variation (information content)
+Normalize across the **entire panel** (not year-by-year) to preserve temporal 
+trends over all years.
 
-**Formula**:
 ```
-w_j = (1 - E_j) / Σ(1 - E_k)
-where E_j = -k × Σ(p_ij × ln(p_ij))
-      k = 1 / ln(m)
+x_norm = (x - min_global) / (max_global - min_global) + ε
 ```
 
-**Panel-Aware Enhancement**:
+The ε-shift (default 1e-10) ensures no exact zeros for entropy calculation.
+
+### Step 2: PCA Structural Decomposition & Residualization
+
+Remove dominant common trends via PCA, yielding residuals that capture each 
+criterion's **unique information**.
+
+- Component selection: **cumulative variance threshold** (default 0.80)
+- Not Kaiser rule (eigenvalue > 1), which over-extracts for p > 20 (Zwick & Velicer, 1986)
+
 ```
-w_j = α × w_j^spatial + (1-α) × w_j^temporal
-```
-- **Spatial**: Cross-sectional entropy (variation across alternatives)
-- **Temporal**: Time-series entropy (how much criterion evolves)
-- **Default**: α = 0.6 (emphasize cross-sectional)
-
-**Use Case**: Emphasizes criteria that differentiate alternatives
-
----
-
-### 2. CRITIC Method
-
-**Principle**: Combines contrast intensity (std dev) and conflicting character (correlation)
-
-**Formula**:
-```
-w_j = C_j / Σ(C_k)
-where C_j = σ_j × Σ(1 - r_jk)
+X_hat = Z @ V_K^T @ V_K
+R = Z - X_hat
 ```
 
-**Panel-Aware Enhancement**:
-- **Spatial correlation**: How criteria correlate across alternatives at each time
-- **Temporal correlation**: How criteria co-evolve over time
-- **Pooled**: Uses all year-observations together
+### Step 3: PCA-Residualized CRITIC Weights
 
-**Use Case**: Favors criteria with high variation AND low redundancy
+CRITIC with a deliberate hybrid: **σ from the global matrix** (absolute contrast 
+intensity) and **Pearson r from the residual matrix** (unique conflict).
 
----
+```
+C_j = σ_j(global) × Σ_k(1 - r_jk(residual))
+```
 
-### 3. PCA Method
+Rationale: σ captures how much a criterion varies *overall*, while residualized 
+correlation captures how *uniquely* it varies relative to dominant common trends.
 
-**Principle**: Weights from multivariate variance-covariance structure
+### Step 4: Global Entropy Weights
 
-**Formula**:
+Standard Shannon entropy on the full N-row panel:
+
+```
+p_ij = x_ij / Σ_i(x_ij)
+e_j = -(1/ln(N)) × Σ_i(p_ij × ln(p_ij))
+w_j = (1 - e_j) / Σ_k(1 - e_k)
+```
+
+### Step 5: PCA Loadings-based Weights
+
 ```
 w_j = Σ_k (λ_k / Σλ) × v_jk²
 ```
 
-**Panel-Aware Enhancement**:
-Three pooling options:
-1. **Stack** (default): Uses all observations (years × provinces)
-2. **Average Correlation**: PCA on average correlation across years
-3. **Temporal Only**: PCA on entity time series
+Retaining components up to the variance threshold.
 
-**Use Case**: Captures full multivariate relationships
+### Step 6: KL-Divergence Fusion (Geometric Mean)
 
----
+Fuse the three weight vectors by minimizing total KL-divergence (Genest & Zidek, 1986):
 
-## Advanced Ensemble Strategies
+```
+w_j* ∝ Π_k (w_j^(k))^(α_k)
+```
 
-### 1. Game Theory (Min-Deviation Optimization)
+With equal coefficients α = [1/3, 1/3, 1/3] by default.
 
-**Principle**: Methods with lower entropy (more decisive) get higher influence
+**Why KL-divergence over Game Theory?**
+- With m=2 vectors, Game Theory (Gram matrix) yields trivially equal weights
+- With m=3, KL-divergence is information-theoretically optimal
+- Conservative at the tails: requires consensus among all methods
+- Robust with correlated indicators (dampens single-method outliers)
 
-**Process**:
-1. Compute normalized entropy H(w^m) for each weight vector
-2. Confidence score: α_m = 1 - H(w^m)
-3. Weighted combination: w = Σ α_m × w^m
+### Step 7: Bayesian Bootstrap (Dirichlet-Weighted)
 
-**When to Use**: When you want decisive methods to dominate
+For each of B=999 iterations:
+1. Draw observation weights from Dirichlet(1, ..., 1)
+2. Re-run Steps 2–6 with weighted statistics
+3. Collect the fused weight vector
 
----
+Output: posterior **mean** (final weights), **std**, **95% credible intervals**.
 
-### 2. Bayesian Bootstrap (Inverse-Variance Weighting)
+B=999 is standard for percentile-based credible intervals (Davison & Hinkley, 1997). 
+Odd numbers avoid interpolation at the 2.5th/97.5th percentiles.
 
-**Principle**: Methods with more stable weights get higher influence
+### Stability Verification
 
-**Process**:
-1. Resample data matrix B times (default B=500)
-2. Recompute weights on each resample
-3. Estimate variance for each method
-4. Inverse-variance weighting: w_j ∝ Σ_m (w_mj / σ²_mj)
+Split-half check: compute weights on the first half vs. second half of time periods.
 
-**When to Use**: When data quality varies or methods disagree
+- **Cosine similarity** (vector agreement): target ≥ 0.95
+- **Spearman rank correlation** (ordinal agreement): measures whether the 
+  ranking of criteria importance is preserved
 
-**Advantage**: Automatically identifies and downweights unreliable methods
-
----
-
-### 3. Integrated Hybrid ⭐ (RECOMMENDED)
-
-**Principle**: Three-stage deeply coupled integration
-
-**Stage 1 - PCA Structural Analysis**:
-- Extract factor structure
-- Compute PCA-residualized correlation matrix
-
-**Stage 2 - Modified CRITIC**:
-- Uses PCA-residualized correlations (not raw correlations)
-- Focuses on **unique information** not captured by dominant factors
-- Formula: C_j^hybrid = σ_j × Σ(1 - r_jk^residual)
-
-**Stage 3 - Entropy-Weighted Integration**:
-- Compute entropy of each weight vector
-- Integration coefficients: α_m = (1 - H(w^m)) / Σ(1 - H(w^l))
-- Final: w = Σ α_m × w^m
-
-**Why This is Best**:
-1. Methods are structurally interdependent (not just averaged)
-2. PCA informs CRITIC about redundancy
-3. Entropy determines influence automatically
-4. Mathematically elegant and theoretically sound
+High values confirm the weights are **structural** (not dependent on which 
+years are included), making them valid for future predictive data.
 
 ---
 
 ## Configuration
 
-### Standard Mode (Cross-Sectional Only)
-
 ```python
-from src.config import Config
-
-config = Config()
-config.weighting.use_panel_aware = False  # Use latest year only
-config.weighting.ensemble_strategy = "integrated_hybrid"
-config.weighting.pca_variance_threshold = 0.85
-```
-
-### Panel-Aware Mode (RECOMMENDED)
-
-```python
-config.weighting.use_panel_aware = True  # Use full panel data
-config.weighting.spatial_weight = 0.6    # 60% spatial, 40% temporal
-config.weighting.temporal_aggregation = "weighted"  # Recent years emphasized
+@dataclass
+class WeightingConfig:
+    pca_variance_threshold: float = 0.80     # PCA component retention
+    bootstrap_iterations: int = 999          # Bayesian bootstrap B
+    fusion_alphas: List[float] = [1/3, 1/3, 1/3]  # [entropy, critic, pca]
+    stability_threshold: float = 0.95        # Split-half cosine target
+    epsilon: float = 1e-10                   # Numerical stability
 ```
 
 ---
 
-## Usage Examples
-
-### Standard Cross-Sectional Weights
+## Usage
 
 ```python
-from src.weighting import (
-    EntropyWeightCalculator,
-    CRITICWeightCalculator,
-    PCAWeightCalculator,
-    EnsembleWeightCalculator
-)
-import pandas as pd
+from src.weighting import RobustGlobalWeighting
 
-# Single time point data
-data = pd.DataFrame({
-    'C01': [0.8, 0.6, 0.9, 0.7],
-    'C02': [0.5, 0.5, 0.5, 0.5],
-    'C03': [0.3, 0.9, 0.1, 0.7]
-})
-
-# Individual methods
-entropy_calc = EntropyWeightCalculator()
-entropy_result = entropy_calc.calculate(data)
-
-critic_calc = CRITICWeightCalculator()
-critic_result = critic_calc.calculate(data)
-
-pca_calc = PCAWeightCalculator(variance_threshold=0.85)
-pca_result = pca_calc.calculate(data)
-
-# Ensemble (Integrated Hybrid)
-ensemble_calc = EnsembleWeightCalculator(
-    methods=['entropy', 'critic', 'pca'],
-    aggregation='integrated_hybrid'
-)
-ensemble_result = ensemble_calc.calculate(data)
-
-print(ensemble_result.weights)
-```
-
-### Panel-Aware Weights
-
-```python
-from src.weighting import (
-    PanelEntropyCalculator,
-    PanelCRITICCalculator,
-    PanelPCACalculator,
-    PanelEnsembleCalculator
-)
-import pandas as pd
-
-# Panel data structure
-panel_df = pd.DataFrame({
-    'Year': [2020, 2020, 2021, 2021, 2022, 2022],
-    'Province': ['P01', 'P02', 'P01', 'P02', 'P01', 'P02'],
-    'C01': [0.8, 0.6, 0.82, 0.65, 0.85, 0.70],
-    'C02': [0.5, 0.5, 0.52, 0.51, 0.53, 0.52],
-    'C03': [0.3, 0.9, 0.35, 0.85, 0.40, 0.80]
-})
-
-# Panel-aware ensemble (recommended)
-panel_calc = PanelEnsembleCalculator(
-    spatial_weight=0.6,           # 60% cross-sectional, 40% temporal
-    entropy_aggregation='weighted',  # Recent years emphasized
-    critic_pooled=True,
-    pca_pooling='stack'
+calc = RobustGlobalWeighting(
+    pca_variance_threshold=0.80,
+    bootstrap_iterations=999,
 )
 
-result = panel_calc.calculate(
-    panel_df,
+result = calc.calculate(
+    panel_df,               # Long-format: Year, Province, C01..C29
     entity_col='Province',
     time_col='Year',
-    criteria_cols=['C01', 'C02', 'C03']
+    criteria_cols=['C01', 'C02', ..., 'C29']
 )
 
+# Final weights (posterior mean from Bayesian Bootstrap)
 print(result.weights)
-print(result.details['spatial_weights'])
-print(result.details['temporal_weights'])
+
+# Individual weight vectors
+print(result.details['individual_weights']['entropy'])
+print(result.details['individual_weights']['critic'])
+print(result.details['individual_weights']['pca'])
+
+# Bootstrap uncertainty
+print(result.details['bootstrap']['std_weights'])
+print(result.details['bootstrap']['ci_lower_2_5'])
+print(result.details['bootstrap']['ci_upper_97_5'])
+
+# Stability check
+print(result.details['stability']['cosine_similarity'])
+print(result.details['stability']['spearman_correlation'])
+print(result.details['stability']['is_stable'])
 ```
 
 ---
 
-## Panel Data Utilization: Before vs After
+## Scientific Corrections Applied
 
-### ❌ BEFORE (Standard Mode)
+The original strategy document ([new-strategy.txt](new-strategy.txt)) proposed 
+a 7-step pipeline. The following corrections were applied during implementation:
 
-```python
-# Only uses latest year
-latest_year = max(panel_data.years)
-df = panel_data.cross_section[latest_year]
-weights = calculate_weights(df)
-
-# Problems:
-# - 80% of data ignored (if 5 years available)
-# - No temporal patterns considered
-# - No stability assessment
-```
-
-### ✅ AFTER (Panel-Aware Mode)
-
-```python
-# Uses ALL years and all observations
-panel_df = panel_data.to_dataframe()  # Full panel
-weights = panel_calc.calculate(panel_df)
-
-# Benefits:
-# - Utilizes 100% of available data
-# - Captures temporal trends
-# - Measures stability across time
-# - More robust to outliers
-# - Accounts for co-evolution patterns
-```
-
----
-
-## Comparison: When to Use What
-
-| Method | Best For | Panel-Aware? | Computational Cost |
-|--------|----------|--------------|-------------------|
-| **Entropy** | High variation emphasis | ✅ Yes | Low |
-| **CRITIC** | Variance + low correlation | ✅ Yes | Low |
-| **PCA** | Multivariate structure | ✅ Yes | Medium |
-| **Game Theory** | Decisive method emphasis | ❌ No* | Low |
-| **Bayesian Bootstrap** | Reliability assessment | ❌ No* | High (resampling) |
-| **Integrated Hybrid** | General purpose (best) | ✅ Yes | Medium |
-
-*Game Theory and Bayesian Bootstrap work on **already computed** panel-aware weights
-
----
-
-## Recommendations
-
-### For Panel Data (5+ years)
-
-1. **Use panel-aware methods** (`use_panel_aware = True`)
-2. **Use Integrated Hybrid ensemble** (default)
-3. **Set spatial_weight = 0.6** (emphasize cross-sectional)
-4. **Use temporal_aggregation = 'weighted'** (recent years more important)
-
-### For Cross-Sectional Data (1-2 years)
-
-1. **Use standard methods** (`use_panel_aware = False`)
-2. **Use Integrated Hybrid ensemble**
-3. Standard Entropy, CRITIC, PCA work well
-
-### For Uncertain/Noisy Data
-
-1. **Use Bayesian Bootstrap** for reliability assessment
-2. **Check confidence intervals** in output
-3. **Examine stability scores** for each method
-
----
-
-## Mathematical Properties
-
-### Entropy
-- **Range**: [0, 1] for each criterion
-- **Sum**: Always 1 (simplex constraint)
-- **Interpretation**: Information content
-
-### CRITIC
-- **Range**: [0, 1] for each criterion
-- **Sum**: Always 1
-- **Interpretation**: Contrast × Conflict
-
-### PCA
-- **Range**: [0, 1] for each criterion
-- **Sum**: Always 1
-- **Interpretation**: Contribution to total variance
-
-### Ensemble
-- **Range**: [0, 1] for each criterion
-- **Sum**: Always 1
-- **Interpretation**: Comprehensive importance
-
----
-
-## Performance Characteristics
-
-### Panel-Aware vs Standard (5-year panel)
-
-| Aspect | Standard | Panel-Aware | Improvement |
-|--------|----------|-------------|-------------|
-| Data utilization | 20% | 100% | +400% |
-| Temporal trends | ❌ No | ✅ Yes | Qualitative |
-| Stability assessment | ❌ No | ✅ Yes | Qualitative |
-| Computation time | 1x | ~3x | Acceptable |
-| Robustness | Baseline | Higher | +15-30% variance reduction |
-
----
-
-## Validation
-
-All methods have been mathematically validated:
-
-1. ✅ **Entropy**: Correct Shannon entropy formula
-2. ✅ **CRITIC**: Proper std dev × conflict calculation
-3. ✅ **PCA**: Valid eigenvalue decomposition weights
-4. ✅ **Game Theory**: Proper entropy-based confidence weighting
-5. ✅ **Bayesian Bootstrap**: Correct inverse-variance weighting
-6. ✅ **Integrated Hybrid**: Theoretically sound three-stage process
+| Issue | Correction | Reference |
+|---|---|---|
+| Kaiser rule for PCA (eigenvalue > 1) | Cumulative variance threshold (0.80) — Kaiser over-extracts for p > 20 | Zwick & Velicer (1986) |
+| Game Theory with m=2 is degenerate | KL-Divergence fusion with m=3 vectors (Entropy + CRITIC + PCA) | Genest & Zidek (1986) |
+| Bootstrap B=1000 (even number) | B=999 (odd, conventional for percentile CIs) | Davison & Hinkley (1997) |
+| Cosine similarity only for stability | Added Spearman rank correlation alongside | — |
+| Zero values in entropy (0·ln0 undefined) | ε-shift in normalization step | Standard practice |
+| No justification for σ/r mixing in CRITIC | Documented: σ = absolute contrast, r = unique conflict | Diakoulaki et al. (1995) |
 
 ---
 
 ## References
 
-### Original Methods
+1. Diakoulaki, D., Mavrotas, G., & Papayannakis, L. (1995). Determining 
+   objective weights in multiple criteria problems: The CRITIC method. 
+   *Computers & Operations Research.*
 
-- Shannon, C.E. (1948). A Mathematical Theory of Communication. *Bell System Technical Journal*.
-- Diakoulaki, D., Mavrotas, G., & Papayannakis, L. (1995). Determining objective weights in multiple criteria problems: The CRITIC method. *Computers & Operations Research*.
-- Deng, H., Yeh, C.H., & Willis, R.J. (2000). Inter-company comparison using modified TOPSIS with objective weights. *Computers & Operations Research*.
+2. Shannon, C.E. (1948). A Mathematical Theory of Communication. 
+   *Bell System Technical Journal.*
 
-### Ensemble Methods
+3. Deng, H., Yeh, C.H., & Willis, R.J. (2000). Inter-company comparison 
+   using modified TOPSIS with objective weights. *Computers & Ops Research.*
 
-- Wang, Y.M., & Luo, Y. (2010). Integration of correlations with standard deviations for determining attribute weights in multiple attribute decision making. *Mathematical and Computer Modelling*.
-- Yan, H.B., & Ma, T. (2015). A game theory-based approach for combining multiple sets of weights. *Expert Systems with Applications*.
+4. Genest, C. & Zidek, J.V. (1986). Combining probability distributions: 
+   A critique and annotated bibliography. *Statistical Science.*
 
-### Panel Data
+5. Abbas, A.E. (2009). A Kullback-Leibler view of linear and log-linear pools. 
+   *Decision Analysis.*
 
-- Kao, C. (2014). Network data envelopment analysis: A review. *European Journal of Operational Research*.
-- Baltagi, B.H. (2008). *Econometric Analysis of Panel Data*. John Wiley & Sons.
+6. Rubin, D.B. (1981). The Bayesian Bootstrap. *Annals of Statistics.*
 
----
+7. Davison, A.C. & Hinkley, D.V. (1997). Bootstrap Methods and Their 
+   Application. Cambridge University Press.
 
-## Contact
-
-For questions about weighting methods implementation, see:
-- `src/weighting/` - Standard methods
-- `src/weighting/panel_weighting.py` - Panel-aware methods
-- `src/pipeline.py` - Integration with MCDM pipeline
-- `src/config.py` - Configuration options
+8. Zwick, W.R. & Velicer, W.F. (1986). Comparison of five rules for 
+   determining the number of components to retain. *Psychological Bulletin.*

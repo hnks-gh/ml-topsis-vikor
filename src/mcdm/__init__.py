@@ -44,11 +44,7 @@ from ..weighting import (
     EntropyWeightCalculator,
     CRITICWeightCalculator,
     PCAWeightCalculator,
-    EnsembleWeightCalculator,
-    PanelEntropyCalculator,
-    PanelCRITICCalculator,
-    PanelPCACalculator,
-    PanelEnsembleCalculator,
+    RobustGlobalWeighting,
     WeightResult
 )
 
@@ -68,11 +64,7 @@ __all__ = [
     'EntropyWeightCalculator',
     'CRITICWeightCalculator',
     'PCAWeightCalculator',
-    'EnsembleWeightCalculator',
-    'PanelEntropyCalculator',
-    'PanelCRITICCalculator',
-    'PanelPCACalculator',
-    'PanelEnsembleCalculator',
+    'RobustGlobalWeighting',
     'WeightResult',
     
     # Traditional MCDM

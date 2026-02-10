@@ -37,18 +37,18 @@ class TestConfig:
         config = get_default_config()
         assert config is not None
         assert config.panel.n_provinces == 64
-        assert config.panel.n_components == 20
+        assert config.panel.n_components == 29
     
     def test_config_panel_settings(self):
         from src.config import get_default_config
         config = get_default_config()
-        assert len(config.panel.years) == 5
-        assert config.panel.n_observations == 64 * 5
+        assert len(config.panel.years) == 14
+        assert config.panel.n_observations == 64 * 14
     
     def test_config_ml_settings(self):
         from src.config import get_default_config
         config = get_default_config()
-        assert config.neural.enabled == False  # Disabled by default - insufficient data
+        assert config.neural.enabled == True  # 896 observations sufficient
         assert config.random_forest.n_estimators > 0
 
 
@@ -104,7 +104,25 @@ class TestDataLoader:
 
 
 class TestWeighting:
-    """Test weighting methods."""
+    """Test weighting methods — Robust Global Hybrid + standalone utilities."""
+    
+    # ── Helper: generate panel-like test data ──
+    
+    @staticmethod
+    def _make_panel(n_entities=10, n_years=4, n_criteria=5, seed=42):
+        """Create a synthetic panel DataFrame for testing."""
+        rng = np.random.RandomState(seed)
+        rows = []
+        criteria = [f'C{j+1:02d}' for j in range(n_criteria)]
+        for y in range(n_years):
+            for e in range(n_entities):
+                row = {'Year': 2010 + y, 'Province': f'P{e+1:02d}'}
+                for j, c in enumerate(criteria):
+                    row[c] = rng.uniform(0.1, 1.0) + 0.01 * y  # slight trend
+                rows.append(row)
+        return pd.DataFrame(rows), criteria
+    
+    # ── Standalone utility tests (Entropy, CRITIC, PCA) ──
     
     def test_entropy_weights(self):
         from src.weighting import EntropyWeightCalculator
@@ -138,22 +156,7 @@ class TestWeighting:
         assert len(result.weights) == 3
         assert abs(sum(result.weights.values()) - 1.0) < 0.001
     
-    def test_ensemble_weights(self):
-        from src.weighting import EnsembleWeightCalculator
-        
-        data = pd.DataFrame({
-            'A': [0.1, 0.2, 0.3, 0.4, 0.5],
-            'B': [0.5, 0.4, 0.3, 0.2, 0.1],
-            'C': [0.4, 0.3, 0.4, 0.3, 0.4]
-        })
-        
-        calc = EnsembleWeightCalculator(aggregation='arithmetic')
-        result = calc.calculate(data)
-        
-        assert len(result.weights) == 3
-        assert abs(sum(result.weights.values()) - 1.0) < 0.001
-    
-    def test_pca_weights(self):
+    def test_pca_weights_standalone(self):
         from src.weighting import PCAWeightCalculator
         
         data = pd.DataFrame({
@@ -191,87 +194,6 @@ class TestWeighting:
         for col in data.columns:
             assert abs(residual_corr.loc[col, col] - 1.0) < 0.01
     
-    def test_ensemble_game_theory(self):
-        from src.weighting import EnsembleWeightCalculator
-        
-        data = pd.DataFrame({
-            'A': [0.1, 0.2, 0.3, 0.4, 0.5],
-            'B': [0.5, 0.4, 0.3, 0.2, 0.1],
-            'C': [0.4, 0.3, 0.4, 0.3, 0.4]
-        })
-        
-        calc = EnsembleWeightCalculator(aggregation='game_theory')
-        result = calc.calculate(data)
-        
-        assert len(result.weights) == 3
-        assert abs(sum(result.weights.values()) - 1.0) < 0.001
-        assert all(w > 0 for w in result.weights.values())
-        assert "game_theory_alpha" in result.details
-        assert "confidence_scores" in result.details
-    
-    def test_ensemble_bayesian_bootstrap(self):
-        from src.weighting import EnsembleWeightCalculator
-        
-        data = pd.DataFrame({
-            'A': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
-            'B': [0.5, 0.4, 0.3, 0.2, 0.1, 0.6, 0.7, 0.3],
-            'C': [0.4, 0.3, 0.4, 0.3, 0.4, 0.2, 0.5, 0.6]
-        })
-        
-        calc = EnsembleWeightCalculator(
-            aggregation='bayesian_bootstrap', bootstrap_samples=50)
-        result = calc.calculate(data)
-        
-        assert len(result.weights) == 3
-        assert abs(sum(result.weights.values()) - 1.0) < 0.001
-        assert all(w > 0 for w in result.weights.values())
-        assert "stability_scores" in result.details
-        assert "effective_method_weights" in result.details
-    
-    def test_ensemble_integrated_hybrid(self):
-        from src.weighting import EnsembleWeightCalculator
-        
-        data = pd.DataFrame({
-            'A': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
-            'B': [0.5, 0.4, 0.3, 0.2, 0.1, 0.6],
-            'C': [0.4, 0.3, 0.4, 0.3, 0.4, 0.2],
-            'D': [0.15, 0.25, 0.35, 0.45, 0.55, 0.3]
-        })
-        
-        calc = EnsembleWeightCalculator(aggregation='integrated_hybrid')
-        result = calc.calculate(data)
-        
-        assert len(result.weights) == 4
-        assert abs(sum(result.weights.values()) - 1.0) < 0.001
-        assert all(w > 0 for w in result.weights.values())
-        assert result.method == "ensemble_integrated_hybrid"
-        assert "stages" in result.details
-        assert "integration_coefficients" in result.details
-        assert "individual_weights" in result.details
-        # Should have PCA-hybrid CRITIC as well as standard CRITIC
-        indiv = result.details["individual_weights"]
-        assert "entropy" in indiv
-        assert "critic_pca_hybrid" in indiv
-        assert "pca" in indiv
-    
-    def test_ensemble_geometric_legacy(self):
-        """Test backward compatibility: geometric mean with entropy+critic only."""
-        from src.weighting import EnsembleWeightCalculator
-        
-        data = pd.DataFrame({
-            'A': [0.1, 0.2, 0.3, 0.4, 0.5],
-            'B': [0.5, 0.4, 0.3, 0.2, 0.1],
-            'C': [0.4, 0.3, 0.4, 0.3, 0.4]
-        })
-        
-        calc = EnsembleWeightCalculator(
-            methods=['entropy', 'critic'], aggregation='geometric')
-        result = calc.calculate(data)
-        
-        assert len(result.weights) == 3
-        assert abs(sum(result.weights.values()) - 1.0) < 0.001
-        assert result.details["aggregation"] == "geometric"
-    
     def test_calculate_weights_pca(self):
         from src.weighting import calculate_weights
         
@@ -284,6 +206,209 @@ class TestWeighting:
         result = calculate_weights(data, method='pca')
         assert result.method == "pca"
         assert abs(sum(result.weights.values()) - 1.0) < 0.001
+    
+    # ── Robust Global Hybrid Weighting: individual step tests ──
+    
+    def test_global_min_max_normalization(self):
+        """Test that global min-max normalization produces values in (ε, 1+ε]."""
+        from src.weighting import RobustGlobalWeighting
+        
+        calc = RobustGlobalWeighting()
+        X = np.array([[1.0, 10.0], [5.0, 20.0], [3.0, 15.0]])
+        X_norm = calc._global_min_max_normalize(X)
+        
+        # All values should be > 0 (epsilon-shifted)
+        assert np.all(X_norm > 0)
+        # Relative ordering within each column preserved
+        assert X_norm[1, 0] > X_norm[2, 0] > X_norm[0, 0]
+        assert X_norm[1, 1] > X_norm[2, 1] > X_norm[0, 1]
+    
+    def test_pca_residualization(self):
+        """Test PCA structural decomposition and residualization."""
+        from src.weighting import RobustGlobalWeighting
+        
+        rng = np.random.RandomState(42)
+        X = rng.uniform(0.1, 1.0, size=(50, 6))
+        X_norm = X  # already positive
+        
+        calc = RobustGlobalWeighting(pca_variance_threshold=0.80)
+        pca_info = calc._pca_residualize(X_norm)
+        
+        assert pca_info['residual'].shape == X.shape
+        assert pca_info['n_components'] >= 1
+        assert 0 < pca_info['variance_explained'] <= 1.0
+        # Residual + reconstructed should approximately equal standardized original
+        # (up to standardization)
+    
+    def test_critic_weights_residualized(self):
+        """Test CRITIC uses σ from global and r from residual."""
+        from src.weighting import RobustGlobalWeighting
+        
+        rng = np.random.RandomState(42)
+        X_norm = rng.uniform(0.1, 1.0, size=(50, 5)) + 1e-10
+        
+        calc = RobustGlobalWeighting()
+        pca_info = calc._pca_residualize(X_norm)
+        W_c = calc._critic_weights(X_norm, pca_info['residual'])
+        
+        assert len(W_c) == 5
+        assert abs(W_c.sum() - 1.0) < 1e-8
+        assert np.all(W_c > 0)
+    
+    def test_entropy_weights_global(self):
+        """Test global entropy on full panel."""
+        from src.weighting import RobustGlobalWeighting
+        
+        rng = np.random.RandomState(42)
+        X_norm = rng.uniform(0.1, 1.0, size=(50, 5)) + 1e-10
+        
+        calc = RobustGlobalWeighting()
+        W_e = calc._entropy_weights(X_norm)
+        
+        assert len(W_e) == 5
+        assert abs(W_e.sum() - 1.0) < 1e-8
+        assert np.all(W_e > 0)
+    
+    def test_pca_weights_loadings(self):
+        """Test PCA loadings-based weights."""
+        from src.weighting import RobustGlobalWeighting
+        
+        rng = np.random.RandomState(42)
+        X_norm = rng.uniform(0.1, 1.0, size=(50, 5)) + 1e-10
+        
+        calc = RobustGlobalWeighting()
+        W_p = calc._pca_weights(X_norm)
+        
+        assert len(W_p) == 5
+        assert abs(W_p.sum() - 1.0) < 1e-8
+        assert np.all(W_p > 0)
+    
+    def test_kl_divergence_fusion(self):
+        """Test KL-divergence fusion is geometric mean and sums to 1."""
+        from src.weighting import RobustGlobalWeighting
+        
+        calc = RobustGlobalWeighting()
+        W_e = np.array([0.3, 0.5, 0.2])
+        W_c = np.array([0.4, 0.3, 0.3])
+        W_p = np.array([0.25, 0.45, 0.30])
+        
+        W_fused = calc._kl_divergence_fusion(W_e, W_c, W_p)
+        
+        assert len(W_fused) == 3
+        assert abs(W_fused.sum() - 1.0) < 1e-8
+        assert np.all(W_fused > 0)
+        
+        # With equal alphas, should be geometric mean (normalized)
+        geo = np.exp((np.log(W_e) + np.log(W_c) + np.log(W_p)) / 3)
+        geo_norm = geo / geo.sum()
+        np.testing.assert_allclose(W_fused, geo_norm, rtol=1e-6)
+    
+    def test_bayesian_bootstrap_dirichlet(self):
+        """Test Bayesian Bootstrap produces valid posterior statistics."""
+        from src.weighting import RobustGlobalWeighting
+        
+        rng = np.random.RandomState(42)
+        X_norm = rng.uniform(0.1, 1.0, size=(40, 4)) + 1e-10
+        
+        calc = RobustGlobalWeighting(bootstrap_iterations=50, seed=42)
+        boot = calc._bayesian_bootstrap(X_norm)
+        
+        # Mean weights sum to 1
+        assert abs(boot['mean_weights'].sum() - 1.0) < 1e-6
+        # All mean weights positive
+        assert np.all(boot['mean_weights'] > 0)
+        # Std is non-negative
+        assert np.all(boot['std_weights'] >= 0)
+        # CI lower < mean < CI upper (approximately)
+        assert np.all(boot['ci_lower'] <= boot['mean_weights'] + 1e-6)
+        assert np.all(boot['ci_upper'] >= boot['mean_weights'] - 1e-6)
+        # All bootstrap samples shape
+        assert boot['all_weights'].shape == (50, 4)
+    
+    def test_stability_verification(self):
+        """Test split-half stability check."""
+        from src.weighting import RobustGlobalWeighting
+        
+        panel_df, criteria = self._make_panel(n_entities=10, n_years=6, n_criteria=5)
+        X_raw = panel_df[criteria].values
+        time_values = panel_df['Year'].values
+        
+        calc = RobustGlobalWeighting()
+        stability = calc._stability_verification(X_raw, time_values)
+        
+        assert 'cosine_similarity' in stability
+        assert 'spearman_correlation' in stability
+        assert 'is_stable' in stability
+        assert 0 <= stability['cosine_similarity'] <= 1.0
+        assert -1 <= stability['spearman_correlation'] <= 1.0
+    
+    def test_weighted_statistics(self):
+        """Test weighted mean, cov, corr match manual calculations."""
+        from src.weighting import RobustGlobalWeighting
+        
+        X = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+        w = np.array([0.5, 0.3, 0.2])
+        
+        calc = RobustGlobalWeighting()
+        
+        # Weighted mean
+        mu = calc._weighted_mean(X, w)
+        expected_mu = np.array([0.5*1 + 0.3*3 + 0.2*5,
+                                0.5*2 + 0.3*4 + 0.2*6])
+        np.testing.assert_allclose(mu, expected_mu, atol=1e-10)
+        
+        # Weighted std should be positive
+        std = calc._weighted_std(X, w)
+        assert np.all(std > 0)
+        
+        # Weighted correlation diagonal = 1
+        corr = calc._weighted_corr(X, w)
+        np.testing.assert_allclose(np.diag(corr), 1.0, atol=1e-10)
+        assert corr.shape == (2, 2)
+    
+    # ── Full pipeline integration test ──
+    
+    def test_robust_global_full_pipeline(self):
+        """Test the complete Robust Global Hybrid Weighting pipeline."""
+        from src.weighting import RobustGlobalWeighting
+        
+        panel_df, criteria = self._make_panel(
+            n_entities=15, n_years=4, n_criteria=6, seed=99)
+        
+        calc = RobustGlobalWeighting(
+            pca_variance_threshold=0.80,
+            bootstrap_iterations=30,  # small for test speed
+            seed=42
+        )
+        result = calc.calculate(
+            panel_df, entity_col='Province', time_col='Year',
+            criteria_cols=criteria
+        )
+        
+        # Basic weight properties
+        assert len(result.weights) == 6
+        assert abs(sum(result.weights.values()) - 1.0) < 1e-6
+        assert all(w > 0 for w in result.weights.values())
+        assert result.method == "robust_global_hybrid"
+        
+        # Details structure
+        d = result.details
+        assert "individual_weights" in d
+        assert "entropy" in d["individual_weights"]
+        assert "critic" in d["individual_weights"]
+        assert "pca" in d["individual_weights"]
+        assert "kl_fused" in d["individual_weights"]
+        
+        assert "fusion_alphas" in d
+        assert "bootstrap" in d
+        assert d["bootstrap"]["iterations"] == 30
+        
+        assert "pca" in d
+        assert d["pca"]["n_components"] >= 1
+        
+        assert "stability" in d
+        assert "cosine_similarity" in d["stability"]
+        assert "spearman_correlation" in d["stability"]
 
 
 class TestTraditionalMCDM:
@@ -957,7 +1082,7 @@ class TestIntegration:
     def test_end_to_end_workflow(self):
         """Test complete end-to-end workflow with multiple MCDM methods."""
         from src.data_loader import PanelDataLoader
-        from src.weighting import EnsembleWeightCalculator
+        from src.weighting import EntropyWeightCalculator
         from src.mcdm.traditional import TOPSISCalculator
         from src.mcdm.fuzzy import FuzzyTOPSIS
         from src.ensemble.aggregation import BordaCount
@@ -971,7 +1096,7 @@ class TestIntegration:
         )
         
         # 2. Calculate weights
-        weight_calc = EnsembleWeightCalculator()
+        weight_calc = EntropyWeightCalculator()
         weight_result = weight_calc.calculate(
             panel_data.cross_section[panel_data.years[-1]]
         )

@@ -23,7 +23,7 @@ class WeightResult:
         return pd.Series(self.weights)
 
 
-def calculate_weights(data: pd.DataFrame, method: str = "ensemble") -> WeightResult:
+def calculate_weights(data: pd.DataFrame, method: str = "robust_global") -> WeightResult:
     """
     Convenience function to calculate weights.
     
@@ -32,7 +32,8 @@ def calculate_weights(data: pd.DataFrame, method: str = "ensemble") -> WeightRes
     data : pd.DataFrame
         Decision matrix (alternatives × criteria)
     method : str
-        Weight calculation method: 'entropy', 'critic', 'pca', 'ensemble', or 'equal'
+        Weight calculation method: 'entropy', 'critic', 'pca',
+        'robust_global', or 'equal'
     
     Returns
     -------
@@ -42,7 +43,6 @@ def calculate_weights(data: pd.DataFrame, method: str = "ensemble") -> WeightRes
     from .entropy import EntropyWeightCalculator
     from .critic import CRITICWeightCalculator
     from .pca import PCAWeightCalculator
-    from .ensemble import EnsembleWeightCalculator
     
     if method == "entropy":
         return EntropyWeightCalculator().calculate(data)
@@ -50,8 +50,10 @@ def calculate_weights(data: pd.DataFrame, method: str = "ensemble") -> WeightRes
         return CRITICWeightCalculator().calculate(data)
     elif method == "pca":
         return PCAWeightCalculator().calculate(data)
-    elif method == "ensemble":
-        return EnsembleWeightCalculator().calculate(data)
+    elif method in ("robust_global", "ensemble"):
+        from .robust_global import RobustGlobalWeighting
+        calc = RobustGlobalWeighting()
+        return calc.calculate(data)
     elif method == "equal":
         cols = data.columns.tolist()
         w = 1.0 / len(cols)

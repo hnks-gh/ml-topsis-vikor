@@ -19,7 +19,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from dataclasses import dataclass, field
 from scipy.stats import spearmanr
 
-from ...weighting import WeightResult, EnsembleWeightCalculator
+from ...weighting import WeightResult, EntropyWeightCalculator
 
 
 @dataclass
@@ -117,7 +117,7 @@ class TOPSISCalculator:
         """
         # Get weights
         if weights is None:
-            weight_calc = EnsembleWeightCalculator()
+            weight_calc = EntropyWeightCalculator()
             weight_result = weight_calc.calculate(data)
             weights = weight_result.weights
         elif isinstance(weights, WeightResult):

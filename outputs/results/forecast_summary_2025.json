@@ -1,6 +1,15 @@
 {
   "prediction_year": 2025,
   "training_years": [
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
     2020,
     2021,
     2022,
@@ -10,12 +19,12 @@
   "n_entities": 64,
   "n_components": 20,
   "top_predicted_entity": "P14",
-  "top_predicted_score": 0.8568344993059318,
-  "mean_predicted_score": 0.5126817584944805,
+  "top_predicted_score": 0.8401939091130358,
+  "mean_predicted_score": 0.49958516665474273,
   "model_contributions": {
-    "GradientBoosting": 0.4096666528329313,
-    "RandomForest": 6.790556067082974e-06,
-    "BayesianRidge": 0.47209921938218397,
-    "Huber": 0.11822733722881754
+    "GradientBoosting": 0.16504936957292668,
+    "RandomForest": 1.9381115135717136e-06,
+    "BayesianRidge": 0.8344406776431966,
+    "Huber": 0.0005080146723631938
   }
 }

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-02-10T00:59:25.914474",
+  "timestamp": "2026-02-10T23:52:57.132852",
   "config": {
     "paths": {
       "base_dir": "C:\\Users\\hoang\\Documents\\ml-mcdm"
@@ -85,7 +85,7 @@
       "min_samples_split": 5,
       "min_samples_leaf": 2,
       "max_features": "sqrt",
-      "n_splits": 2,
+      "n_splits": 4,
       "gap": 0,
       "use_lags": true,
       "n_lags": 2,
@@ -93,7 +93,7 @@
       "rolling_window": 2
     },
     "neural": {
-      "enabled": false,
+      "enabled": true,
       "hidden_units": 64,
       "n_layers": 2,
       "dropout": 0.2,
@@ -104,14 +104,15 @@
       "attention": false
     },
     "weighting": {
-      "methods": [
-        "entropy",
-        "critic",
-        "pca"
+      "pca_variance_threshold": 0.8,
+      "bootstrap_iterations": 999,
+      "fusion_alphas": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
       ],
-      "ensemble_strategy": "integrated_hybrid",
-      "pca_variance_threshold": 0.85,
-      "bootstrap_samples": 500
+      "stability_threshold": 0.95,
+      "epsilon": 1e-10
     },
     "ensemble": {
       "base_methods": [

@@ -1,0 +1,71 @@
+# STRATEGY: ROBUST GLOBAL HYBRID WEIGHTING (PCA-CRITIC-ENTROPY-GAME THEORY-BAYESIAN BOOTSTRAP)
+# Context: 64 Provinces | 14 Years | 29 Criteria (N=896 rows)
+
+## STEP 1: GLOBAL MIN-MAX NORMALIZATION
+
+To preserve the 14-year temporal trend, normalize across the entire panel, not year-by-year. This ensures that growth or decline over 14 years is visible to the Entropy calculation.
+
+For each criterion , apply **Global Min-Max Scaling** across all 896 rows:
+
+Formula: x_norm = (x - min_global) / (max_global - min_global)
+
+* 'x_norm' is the normalized score for country  in year  for criterion .
+* 'min_global' and 'max_global' are the absolute minimum and maximum found anywhere in that column across the 14 years.
+
+---
+
+## STEP 2: Structural Decomposition (GLOBAL PCA & RESIDUALIZATION)
+
+We want to find weights based on the "unique information" of each criterion, not just the massive global trends that move everything at once.
+
+1. **Run Global PCA:** Run PCA on the 896 x 29 normalized matrix.
+2. **Factor Selection:** Select the top k factors that explain ~70-80% of variance (usually where eigenvalues > 1 or based on a Scree plot).
+3. Reconstruct the "Trend Data": X_hat = (Factor_Scores) * (Factor_Loadings_Transposed).
+4. Calculate the Residual Matrix (R): R = X_norm - X_hat.
+- Purpose: This removes the dominant "world movement" so your weights focus on the unique contribution of each criterion.
+
+---
+
+## STEP 3: CALCULATE PCA-RESIDUALIZED CRITIC WEIGHTS (W_c)
+1. Standard Deviation (sigma): Calculate the standard deviation for each criterion column in the Global Matrix.
+2. Correlation (r): Calculate the Pearson Correlation Matrix of the Residual Matrix (R).
+3. Conflict Measure (f): For each criterion j, sum the values: f_j = sum_for_all_k(1 - r_jk).
+4. Information Quantity (C): C_j = sigma_j * f_j.
+5. Final CRITIC Weight: W_cj = C_j / sum(C_all).
+
+## STEP 4: CALCULATE GLOBAL ENTROPY WEIGHTS (W_e)
+1. Probability (p): For each cell, p_itj = x_norm / sum(all x_norm in column j).
+2. Entropy (e): e_j = - (1 / ln(896)) * sum(p_itj * ln(p_itj)).
+3. Difference Coefficient (d): d_j = 1 - e_j.
+4. Final Entropy Weight: W_ej = d_j / sum(d_all).
+- Note: This measures which criteria consistently differentiated provinces over the 14-year span.
+---
+
+## STEP 5: GAME THEORY FUSION
+1. The goal is to find a set of coefficients (a1, a2) that minimize the 
+   deviation between the integrated weight vector (W*) and the source vectors.
+2. Formula logic: 
+   - Minimize || (a1*W_e + a2*W_c) - W_e ||^2 
+   - Minimize || (a1*W_e + a2*W_c) - W_c ||^2
+3. Solve the resulting linear system for a1 and a2.
+4. Normalize the coefficients: A1 = a1 / (a1 + a2) and A2 = a2 / (a1 + a2).
+5. Final Integrated Vector: W_final = A1*W_e + A2*W_c.
+---
+
+## STEP 6: BAYESIAN BOOTSTRAP
+To ensure the weight is "Static" and "Reliable" for future predictions:
+1. Generate 1,000 sets of Bayesian weights. 
+   - Unlike standard bootstrapping, this assigns a random weight (from a 
+     Dirichlet distribution) to each of the 896 province-year observations.
+2. For each iteration:
+   - Re-run Step 2-5 using the weighted observations.
+3. Statistics of the Weight Distribution:
+   - Expectation (Mean): This becomes your FINAL STATIC WEIGHT.
+   - Standard Deviation: Measures the uncertainty of each criterion.
+   - Credible Interval (95%): Gives you the "safety range" for future scores.
+
+## STEP 7: FINAL VERIFICATION
+- Weight Stability Index: Calculate the similarity (Cosine Similarity) between 
+  weights derived from Years 1-7 vs. Years 8-14.
+- High similarity (>0.95) confirms the weight is "Static" and "Structural," 
+  making it valid for future predictive data.

@@ -77,8 +77,8 @@ class PathConfig:
 class PanelDataConfig:
     """Panel data structure configuration."""
     n_provinces: int = 64
-    n_components: int = 20
-    years: List[int] = field(default_factory=lambda: [2020, 2021, 2022, 2023, 2024])
+    n_components: int = 29
+    years: List[int] = field(default_factory=lambda: list(range(2011, 2025)))
     province_col: str = "Province"
     year_col: str = "Year"
     component_prefix: str = "C"
@@ -161,7 +161,7 @@ class RandomForestConfig:
     min_samples_split: int = 5
     min_samples_leaf: int = 2
     max_features: str = "sqrt"
-    n_splits: int = 2  # Reduced from 3 to work with 5-year panels after lag features
+    n_splits: int = 4  # 14-year panel supports more CV folds
     gap: int = 0
     use_lags: bool = True
     n_lags: int = 2
@@ -175,17 +175,14 @@ class NeuralConfig:
     Neural network configuration (MLP and Attention-based forecasters).
     
     Note: This configures the MLP/Attention neural network forecasters,
-    NOT true LSTM/RNN models. Neural networks are DISABLED by default
-    because the current panel data (5 years, 64 provinces) is insufficient
-    for effective neural network training.
+    NOT true LSTM/RNN models. With 14 years × 64 provinces = 896
+    observations, the dataset is now sufficient for neural training.
     
     The neural forecasting uses:
     - MLP (Multi-Layer Perceptron) with modern architecture
     - Attention-based networks for temporal weighting
-    
-    Enable only if you have sufficient data (100+ samples recommended).
     """
-    enabled: bool = False  # Disabled - insufficient data for neural networks
+    enabled: bool = True  # 896 observations sufficient for neural networks
     hidden_units: int = 64
     n_layers: int = 2
     dropout: float = 0.2
@@ -198,51 +195,39 @@ class NeuralConfig:
 
 @dataclass
 class WeightingConfig:
-    """Weight calculation configuration.
+    """Robust Global Hybrid Weighting configuration.
     
-    Controls which individual weighting methods are used and how they
-    are combined into ensemble weights.
+    Implements a 7-step pipeline operating on the full panel:
+      1. Global Min-Max Normalization (preserves temporal trends)
+      2. PCA Structural Decomposition & Residualization
+      3. PCA-Residualized CRITIC Weights
+      4. Global Entropy Weights
+      5. PCA Loadings-based Weights
+      6. KL-Divergence Fusion (geometric mean of 3 weight vectors)
+      7. Bayesian Bootstrap validation (Dirichlet-weighted, B iterations)
+      8. Split-half stability verification
     
     Parameters
     ----------
-    methods : List[str]
-        Individual weighting methods to compute.
-        Options: 'entropy', 'critic', 'pca'
-    ensemble_strategy : str
-        Strategy for combining individual weight vectors.
-        Advanced strategies only:
-        - 'game_theory': Min-deviation optimization with entropy-based
-          confidence weighting
-        - 'bayesian_bootstrap': Inverse-variance weighting via bootstrap
-          resampling to auto-downweight unstable methods
-        - 'integrated_hybrid': Three-stage hybrid where PCA factor structure
-          informs CRITIC correlation, and entropy-of-weights determines
-          integration coefficients (recommended - default)
     pca_variance_threshold : float
         Cumulative variance ratio threshold for PCA component retention.
-    bootstrap_samples : int
-        Number of bootstrap resamples for bayesian_bootstrap strategy.
-    use_panel_aware : bool
-        If True, use panel-aware weighting methods that utilize both
-        temporal and cross-sectional dimensions of panel data.
-        If False, use traditional methods on latest cross-section only.
-        Default: True (recommended for panel data).
-    spatial_weight : float
-        For panel-aware methods, weight for spatial (cross-sectional)
-        component vs temporal component. Range [0, 1].
-        Default: 0.6 (emphasize cross-sectional variation).
-    temporal_aggregation : str
-        For panel-aware entropy, how to aggregate across years:
-        'mean', 'weighted' (recent years emphasized), 'stable'.
-        Default: 'weighted'.
+        Default 0.80 (appropriate for p=29 correlated indicators).
+    bootstrap_iterations : int
+        Number of Bayesian Bootstrap iterations. Odd numbers conventional
+        for percentile-based credible intervals (Davison & Hinkley, 1997).
+    fusion_alphas : List[float]
+        KL-divergence fusion coefficients for [entropy, critic, pca].
+        Default: equal weights [1/3, 1/3, 1/3].
+    stability_threshold : float
+        Minimum cosine similarity for split-half weight stability.
+    epsilon : float
+        Numerical stability constant for log/division operations.
     """
-    methods: List[str] = field(default_factory=lambda: ["entropy", "critic", "pca"])
-    ensemble_strategy: str = "integrated_hybrid"
-    pca_variance_threshold: float = 0.85
-    bootstrap_samples: int = 500
-    use_panel_aware: bool = True
-    spatial_weight: float = 0.6
-    temporal_aggregation: str = "weighted"
+    pca_variance_threshold: float = 0.80
+    bootstrap_iterations: int = 999
+    fusion_alphas: List[float] = field(default_factory=lambda: [1/3, 1/3, 1/3])
+    stability_threshold: float = 0.95
+    epsilon: float = 1e-10
 
 
 @dataclass
@@ -371,9 +356,11 @@ MCDM METHODS:
   Fuzzy temporal variance: {self.fuzzy.use_temporal_variance}
 
 WEIGHTING:
-  Methods: {self.weighting.methods}
-  Ensemble strategy: {self.weighting.ensemble_strategy}
+  Strategy: Robust Global Hybrid (PCA-CRITIC-Entropy + KL-Divergence Fusion)
   PCA variance threshold: {self.weighting.pca_variance_threshold}
+  Bootstrap iterations: {self.weighting.bootstrap_iterations}
+  Fusion alphas: {self.weighting.fusion_alphas}
+  Stability threshold: {self.weighting.stability_threshold}
 
 ML METHODS:
   Random Forest estimators: {self.random_forest.n_estimators}
