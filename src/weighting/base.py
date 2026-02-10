@@ -32,7 +32,7 @@ def calculate_weights(data: pd.DataFrame, method: str = "ensemble") -> WeightRes
     data : pd.DataFrame
         Decision matrix (alternatives × criteria)
     method : str
-        Weight calculation method: 'entropy', 'critic', 'ensemble', or 'equal'
+        Weight calculation method: 'entropy', 'critic', 'pca', 'ensemble', or 'equal'
     
     Returns
     -------

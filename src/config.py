@@ -210,26 +210,39 @@ class WeightingConfig:
         Options: 'entropy', 'critic', 'pca'
     ensemble_strategy : str
         Strategy for combining individual weight vectors.
-        Options:
-        - 'geometric': Geometric mean (minimum KL-divergence solution)
-        - 'arithmetic': Weighted arithmetic mean
-        - 'harmonic': Harmonic mean
+        Advanced strategies only:
         - 'game_theory': Min-deviation optimization with entropy-based
           confidence weighting
         - 'bayesian_bootstrap': Inverse-variance weighting via bootstrap
           resampling to auto-downweight unstable methods
         - 'integrated_hybrid': Three-stage hybrid where PCA factor structure
           informs CRITIC correlation, and entropy-of-weights determines
-          integration coefficients (recommended)
+          integration coefficients (recommended - default)
     pca_variance_threshold : float
         Cumulative variance ratio threshold for PCA component retention.
     bootstrap_samples : int
         Number of bootstrap resamples for bayesian_bootstrap strategy.
+    use_panel_aware : bool
+        If True, use panel-aware weighting methods that utilize both
+        temporal and cross-sectional dimensions of panel data.
+        If False, use traditional methods on latest cross-section only.
+        Default: True (recommended for panel data).
+    spatial_weight : float
+        For panel-aware methods, weight for spatial (cross-sectional)
+        component vs temporal component. Range [0, 1].
+        Default: 0.6 (emphasize cross-sectional variation).
+    temporal_aggregation : str
+        For panel-aware entropy, how to aggregate across years:
+        'mean', 'weighted' (recent years emphasized), 'stable'.
+        Default: 'weighted'.
     """
     methods: List[str] = field(default_factory=lambda: ["entropy", "critic", "pca"])
     ensemble_strategy: str = "integrated_hybrid"
     pca_variance_threshold: float = 0.85
     bootstrap_samples: int = 500
+    use_panel_aware: bool = True
+    spatial_weight: float = 0.6
+    temporal_aggregation: str = "weighted"
 
 
 @dataclass

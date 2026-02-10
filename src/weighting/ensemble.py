@@ -5,16 +5,10 @@ Ensemble Weight Calculator
 Combines multiple weighting methods for more robust weight determination.
 Supports 6 aggregation strategies from simple means to advanced hybrid methods.
 
-Aggregation Strategies:
-    Simple:
-        Arithmetic Mean: w_j = Σ(α_m × w_mj)
-        Geometric Mean:  w_j = (Π w_mj)^(1/M)   [min KL-divergence]
-        Harmonic Mean:   w_j = M / Σ(1/w_mj)
-    
-    Advanced:
-        Game Theory:          Min-deviation with entropy-confidence weighting
-        Bayesian Bootstrap:   Inverse-variance weighting via resampling
-        Integrated Hybrid:    Three-stage PCA→CRITIC→Entropy integration
+Aggregation Strategies (Advanced Methods Only):
+    - Game Theory:          Min-deviation with entropy-confidence weighting
+    - Bayesian Bootstrap:   Inverse-variance weighting via resampling
+    - Integrated Hybrid:    Three-stage PCA→CRITIC→Entropy integration
 
 References:
     Wang, Y.M., & Luo, Y. (2010). Integration of correlations with
@@ -52,15 +46,12 @@ class EnsembleWeightCalculator:
         Weighting methods to combine. Default: ['entropy', 'critic', 'pca']
     aggregation : str
         Aggregation strategy. Options:
-        - 'arithmetic': Weighted arithmetic mean
-        - 'geometric': Geometric mean (min KL-divergence)
-        - 'harmonic': Harmonic mean
         - 'game_theory': Min-deviation optimization with entropy-based
           confidence weighting
         - 'bayesian_bootstrap': Inverse-variance weighting via bootstrap
           resampling (auto-downweights unstable methods)
         - 'integrated_hybrid': Three-stage PCA→CRITIC→Entropy integration
-          where methods structurally inform each other (recommended)
+          where methods structurally inform each other (recommended - default)
     pca_variance_threshold : float
         Cumulative variance threshold for PCA. Default 0.85.
     bootstrap_samples : int
@@ -95,11 +86,6 @@ class EnsembleWeightCalculator:
     >>> # Bayesian bootstrap (auto-downweights unstable methods)
     >>> calc = EnsembleWeightCalculator(aggregation='bayesian_bootstrap')
     >>> result = calc.calculate(data)
-    >>> 
-    >>> # Legacy: geometric mean of entropy + CRITIC only
-    >>> calc = EnsembleWeightCalculator(
-    ...     methods=['entropy', 'critic'], aggregation='geometric')
-    >>> result = calc.calculate(data)
     
     References
     ----------
@@ -111,7 +97,6 @@ class EnsembleWeightCalculator:
     """
     
     VALID_AGGREGATIONS = {
-        "arithmetic", "geometric", "harmonic",
         "game_theory", "bayesian_bootstrap", "integrated_hybrid"
     }
     
@@ -164,21 +149,8 @@ class EnsembleWeightCalculator:
         # For all other strategies: compute individual weights independently
         weight_results = self._compute_individual_weights(data)
         
-        # Default method weights for arithmetic mean
-        if method_weights is None:
-            method_weights = {m: 1.0 / len(self.methods) for m in self.methods}
-        
         # Dispatch to aggregation strategy
-        if self.aggregation == "arithmetic":
-            ensemble_weights = self._arithmetic_mean(weight_results, method_weights, columns)
-            strategy_details = {}
-        elif self.aggregation == "geometric":
-            ensemble_weights = self._geometric_mean(weight_results, columns)
-            strategy_details = {}
-        elif self.aggregation == "harmonic":
-            ensemble_weights = self._harmonic_mean(weight_results, columns)
-            strategy_details = {}
-        elif self.aggregation == "game_theory":
+        if self.aggregation == "game_theory":
             ensemble_weights, strategy_details = self._game_theory_combination(
                 weight_results, columns)
         elif self.aggregation == "bayesian_bootstrap":
@@ -192,7 +164,6 @@ class EnsembleWeightCalculator:
         
         details = {
             "individual_weights": {m: r.weights for m, r in weight_results.items()},
-            "method_weights": method_weights,
             "aggregation": self.aggregation,
             "weight_correlation": weight_correlation,
             **strategy_details
@@ -236,57 +207,6 @@ class EnsembleWeightCalculator:
                     corr = np.corrcoef(w1, w2)[0, 1]
                 weight_correlation[f"{m1}_vs_{m2}"] = float(corr)
         return weight_correlation
-    
-    # =========================================================================
-    # Simple Aggregation Methods (preserved from original)
-    # =========================================================================
-    
-    def _arithmetic_mean(self, 
-                        results: Dict, 
-                        method_weights: Dict, 
-                        columns: List[str]) -> Dict[str, float]:
-        """Weighted arithmetic mean."""
-        ensemble = {}
-        for col in columns:
-            weighted_sum = sum(
-                method_weights.get(m, 1/len(results)) * r.weights[col]
-                for m, r in results.items()
-            )
-            ensemble[col] = weighted_sum
-        
-        total = sum(ensemble.values())
-        return {k: v/total for k, v in ensemble.items()}
-    
-    def _geometric_mean(self, 
-                       results: Dict, 
-                       columns: List[str]) -> Dict[str, float]:
-        """Geometric mean (equal importance). Equivalent to min KL-divergence."""
-        ensemble = {}
-        n_methods = len(results)
-        
-        for col in columns:
-            product = 1.0
-            for r in results.values():
-                product *= r.weights[col] ** (1/n_methods)
-            ensemble[col] = product
-        
-        total = sum(ensemble.values())
-        return {k: v/total for k, v in ensemble.items()}
-    
-    def _harmonic_mean(self, 
-                      results: Dict, 
-                      columns: List[str]) -> Dict[str, float]:
-        """Harmonic mean."""
-        ensemble = {}
-        n_methods = len(results)
-        epsilon = 1e-10
-        
-        for col in columns:
-            harmonic_sum = sum(1/(r.weights[col] + epsilon) for r in results.values())
-            ensemble[col] = n_methods / harmonic_sum
-        
-        total = sum(ensemble.values())
-        return {k: v/total for k, v in ensemble.items()}
     
     # =========================================================================
     # Advanced Strategy: Game Theory (Min-Deviation Optimization)

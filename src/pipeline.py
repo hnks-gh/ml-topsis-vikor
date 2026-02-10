@@ -21,6 +21,8 @@ from .output_manager import OutputManager, to_array
 from .mcdm import (
     EntropyWeightCalculator, CRITICWeightCalculator, EnsembleWeightCalculator,
     PCAWeightCalculator,
+    PanelEntropyCalculator, PanelCRITICCalculator, PanelPCACalculator,
+    PanelEnsembleCalculator,
     TOPSISCalculator, DynamicTOPSIS, VIKORCalculator, MultiPeriodVIKOR,
     PROMETHEECalculator, COPRASCalculator, EDASCalculator,
     FuzzyTOPSIS, FuzzyVIKOR, FuzzyPROMETHEE, FuzzyCOPRAS, FuzzyEDAS
@@ -299,36 +301,119 @@ class MLMCDMPipeline:
         return panel_data
     
     def _calculate_weights(self, panel_data: PanelData) -> Dict[str, np.ndarray]:
-        """Calculate weights using multiple methods (Entropy, CRITIC, PCA + Ensemble)."""
-        # Get latest cross-section as DataFrame
-        latest_year = max(panel_data.years)
-        df = panel_data.cross_section[latest_year][panel_data.components]
+        """
+        Calculate weights using multiple methods (Entropy, CRITIC, PCA + Ensemble).
         
-        # Entropy weights
-        entropy_calc = EntropyWeightCalculator()
-        entropy_result = entropy_calc.calculate(df)
-        
-        # CRITIC weights
-        critic_calc = CRITICWeightCalculator()
-        critic_result = critic_calc.calculate(df)
-        
-        # PCA weights
-        pca_calc = PCAWeightCalculator(
-            variance_threshold=self.config.weighting.pca_variance_threshold
-        )
-        pca_result = pca_calc.calculate(df)
-        
-        # Ensemble weights (configurable strategy, defaults to integrated_hybrid)
-        ensemble_calc = EnsembleWeightCalculator(
-            methods=self.config.weighting.methods,
-            aggregation=self.config.weighting.ensemble_strategy,
-            pca_variance_threshold=self.config.weighting.pca_variance_threshold,
-            bootstrap_samples=self.config.weighting.bootstrap_samples
-        )
-        ensemble_result = ensemble_calc.calculate(df)
-        
-        # Convert weight dicts to arrays
+        Supports two modes:
+        1. Panel-Aware (default): Utilizes full panel structure (time + cross-section)
+        2. Cross-Sectional: Uses only latest year (legacy mode)
+        """
         components = panel_data.components
+        
+        if self.config.weighting.use_panel_aware:
+            # ===================================================================
+            # PANEL-AWARE MODE: Utilize full temporal and cross-sectional data
+            # ===================================================================
+            self.logger.info("Using PANEL-AWARE weighting methods (time + cross-section)")
+            
+            # Prepare full panel DataFrame
+            panel_df = panel_data.to_dataframe()
+            
+            # Panel Entropy Calculator
+            panel_entropy_calc = PanelEntropyCalculator(
+                spatial_weight=self.config.weighting.spatial_weight,
+                temporal_aggregation=self.config.weighting.temporal_aggregation
+            )
+            entropy_result = panel_entropy_calc.calculate(
+                panel_df,
+                entity_col='Province',
+                time_col='Year',
+                criteria_cols=components
+            )
+            
+            # Panel CRITIC Calculator
+            panel_critic_calc = PanelCRITICCalculator(
+                spatial_weight=self.config.weighting.spatial_weight,
+                use_pooled_correlation=True
+            )
+            critic_result = panel_critic_calc.calculate(
+                panel_df,
+                entity_col='Province',
+                time_col='Year',
+                criteria_cols=components
+            )
+            
+            # Panel PCA Calculator
+            panel_pca_calc = PanelPCACalculator(
+                variance_threshold=self.config.weighting.pca_variance_threshold,
+                pooling_method='stack'  # Use all year-observations
+            )
+            pca_result = panel_pca_calc.calculate(
+                panel_df,
+                entity_col='Province',
+                time_col='Year',
+                criteria_cols=components
+            )
+            
+            # Panel Ensemble Calculator (Integrated Hybrid)
+            panel_ensemble_calc = PanelEnsembleCalculator(
+                spatial_weight=self.config.weighting.spatial_weight,
+                entropy_aggregation=self.config.weighting.temporal_aggregation,
+                critic_pooled=True,
+                pca_pooling='stack',
+                pca_variance_threshold=self.config.weighting.pca_variance_threshold
+            )
+            ensemble_result = panel_ensemble_calc.calculate(
+                panel_df,
+                entity_col='Province',
+                time_col='Year',
+                criteria_cols=components
+            )
+            
+            # Log panel-aware details
+            self.logger.info(f"  Spatial weight: {self.config.weighting.spatial_weight:.2f}, "
+                           f"Temporal weight: {1-self.config.weighting.spatial_weight:.2f}")
+            self.logger.info(f"  Temporal aggregation: {self.config.weighting.temporal_aggregation}")
+            n_years = len(panel_data.years)
+            n_obs = len(panel_df)
+            self.logger.info(f"  Panel dimensions: {n_obs} obs ({n_years} years × "
+                           f"{n_obs//n_years} provinces)")
+            
+        else:
+            # ===================================================================
+            # CROSS-SECTIONAL MODE: Use only latest year (legacy)
+            # ===================================================================
+            self.logger.info("Using CROSS-SECTIONAL weighting (latest year only)")
+            self.logger.warning("  ⚠️  Panel data temporal dimension NOT utilized!")
+            
+            # Get latest cross-section as DataFrame
+            latest_year = max(panel_data.years)
+            df = panel_data.cross_section[latest_year][components]
+            
+            # Entropy weights
+            entropy_calc = EntropyWeightCalculator()
+            entropy_result = entropy_calc.calculate(df)
+            
+            # CRITIC weights
+            critic_calc = CRITICWeightCalculator()
+            critic_result = critic_calc.calculate(df)
+            
+            # PCA weights
+            pca_calc = PCAWeightCalculator(
+                variance_threshold=self.config.weighting.pca_variance_threshold
+            )
+            pca_result = pca_calc.calculate(df)
+            
+            # Ensemble weights (configurable strategy, defaults to integrated_hybrid)
+            ensemble_calc = EnsembleWeightCalculator(
+                methods=self.config.weighting.methods,
+                aggregation=self.config.weighting.ensemble_strategy,
+                pca_variance_threshold=self.config.weighting.pca_variance_threshold,
+                bootstrap_samples=self.config.weighting.bootstrap_samples
+            )
+            ensemble_result = ensemble_calc.calculate(df)
+        
+        # Convert weight dicts to arrays (same for both modes)
         entropy_weights = np.array([entropy_result.weights[c] for c in components])
         critic_weights = np.array([critic_result.weights[c] for c in components])
         pca_weights = np.array([pca_result.weights[c] for c in components])

@@ -45,6 +45,10 @@ from ..weighting import (
     CRITICWeightCalculator,
     PCAWeightCalculator,
     EnsembleWeightCalculator,
+    PanelEntropyCalculator,
+    PanelCRITICCalculator,
+    PanelPCACalculator,
+    PanelEnsembleCalculator,
     WeightResult
 )
 
@@ -65,6 +69,10 @@ __all__ = [
     'CRITICWeightCalculator',
     'PCAWeightCalculator',
     'EnsembleWeightCalculator',
+    'PanelEntropyCalculator',
+    'PanelCRITICCalculator',
+    'PanelPCACalculator',
+    'PanelEnsembleCalculator',
     'WeightResult',
     
     # Traditional MCDM

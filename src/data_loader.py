@@ -62,6 +62,17 @@ class PanelData:
     def get_latest(self) -> pd.DataFrame:
         """Get latest year cross-section."""
         return self.cross_section[max(self.years)]
+    
+    def to_dataframe(self) -> pd.DataFrame:
+        """
+        Get panel data as a DataFrame in long format.
+        
+        Returns
+        -------
+        pd.DataFrame
+            Panel data in long format with columns: [Year, Province, C01, C02, ...]
+        """
+        return self.long.copy()
 
 
 class PanelDataLoader:
