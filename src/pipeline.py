@@ -546,7 +546,7 @@ class MLMCDMPipeline:
         results['fuzzy_edas_result'] = fuzzy_edas_result
         self.logger.info(f"  Fuzzy EDAS: Best AS = {fuzzy_edas_result.AS.max():.4f}")
         
-        self.logger.info("Completed all 10 MCDM methods (5 traditional + 5 fuzzy)")
+        self.logger.info("Completed all 11 MCDM methods (6 traditional + 5 fuzzy)")
         
         return results
     
@@ -671,8 +671,8 @@ class MLMCDMPipeline:
         
         self.logger.info(f"Stacking Meta-Model R²: {stacking_result.meta_model_r2:.4f}")
         
-        # ========== 2. Rank Aggregation using ALL 10 MCDM methods ==========
-        # Collect rankings from all methods
+        # ========== 2. Rank Aggregation using ALL 11 MCDM methods ==========
+        # Collect rankings from all methods (6 traditional + 5 fuzzy)
         rankings = {
             # Traditional methods
             'TOPSIS': to_array(mcdm_results['topsis_rankings']),

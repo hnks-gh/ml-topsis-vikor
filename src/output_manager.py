@@ -109,7 +109,7 @@ class OutputManager:
                       mcdm_results: Dict[str, Any],
                       ensemble_results: Dict[str, Any]) -> str:
         """
-        Save comprehensive ranking results.
+        Save comprehensive ranking results from all 11 MCDM methods.
         
         Parameters
         ----------
@@ -127,30 +127,45 @@ class OutputManager:
         """
         entities = panel_data.entities
         
-        # Build comprehensive ranking DataFrame
+        # Build comprehensive ranking DataFrame with all methods
         df = pd.DataFrame({
-            'Rank': range(1, len(entities) + 1),
             'Entity': entities,
+            # Traditional MCDM Rankings
             'TOPSIS_Score': to_array(mcdm_results['topsis_scores']),
             'TOPSIS_Rank': to_array(mcdm_results['topsis_rankings']),
             'Dynamic_TOPSIS_Score': to_array(mcdm_results['dynamic_topsis_scores']),
             'VIKOR_Q': to_array(mcdm_results['vikor']['Q']),
-            'VIKOR_S': to_array(mcdm_results['vikor']['S']),
-            'VIKOR_R': to_array(mcdm_results['vikor']['R']),
             'VIKOR_Rank': to_array(mcdm_results['vikor']['rankings']),
-            'Fuzzy_TOPSIS_Score': to_array(mcdm_results['fuzzy_scores']),
+            'PROMETHEE_Phi_Net': to_array(mcdm_results['promethee']['phi_net']),
+            'PROMETHEE_Rank': to_array(mcdm_results['promethee']['rankings']),
+            'COPRAS_Utility': to_array(mcdm_results['copras']['utility_degree']),
+            'COPRAS_Rank': to_array(mcdm_results['copras']['rankings']),
+            'EDAS_AS': to_array(mcdm_results['edas']['AS']),
+            'EDAS_Rank': to_array(mcdm_results['edas']['rankings']),
+            # Fuzzy MCDM Rankings
+            'Fuzzy_TOPSIS_Score': to_array(mcdm_results['fuzzy_topsis']['scores']),
+            'Fuzzy_TOPSIS_Rank': to_array(mcdm_results['fuzzy_topsis']['rankings']),
+            'Fuzzy_VIKOR_Q': to_array(mcdm_results['fuzzy_vikor']['Q']),
+            'Fuzzy_VIKOR_Rank': to_array(mcdm_results['fuzzy_vikor']['rankings']),
+            'Fuzzy_PROMETHEE_Phi_Net': to_array(mcdm_results['fuzzy_promethee']['phi_net']),
+            'Fuzzy_PROMETHEE_Rank': to_array(mcdm_results['fuzzy_promethee']['rankings']),
+            'Fuzzy_COPRAS_Utility': to_array(mcdm_results['fuzzy_copras']['utility_degree']),
+            'Fuzzy_COPRAS_Rank': to_array(mcdm_results['fuzzy_copras']['rankings']),
+            'Fuzzy_EDAS_AS': to_array(mcdm_results['fuzzy_edas']['AS']),
+            'Fuzzy_EDAS_Rank': to_array(mcdm_results['fuzzy_edas']['rankings']),
         })
         
-        # Add ensemble results
+        # Add ensemble aggregated results
         if ensemble_results.get('aggregated'):
             agg = ensemble_results['aggregated']
             df['Final_Score'] = to_array(agg.final_scores)
             df['Final_Rank'] = to_array(agg.final_ranking)
+            df['Kendall_W'] = agg.kendall_w
         
         # Sort by final rank or TOPSIS rank
         sort_col = 'Final_Rank' if 'Final_Rank' in df.columns else 'TOPSIS_Rank'
         df = df.sort_values(sort_col).reset_index(drop=True)
-        df['Rank'] = range(1, len(df) + 1)
+        df.insert(0, 'Rank', range(1, len(df) + 1))
         
         save_path = self.results_dir / 'final_rankings.csv'
         df.to_csv(save_path, index=False, float_format='%.6f')
@@ -160,7 +175,10 @@ class OutputManager:
     def save_mcdm_scores(self, panel_data: Any,
                          mcdm_results: Dict[str, Any]) -> str:
         """
-        Save detailed MCDM scores for all methods.
+        Save detailed MCDM scores for all 11 methods.
+        
+        Includes: TOPSIS, Dynamic TOPSIS, VIKOR, PROMETHEE, COPRAS, EDAS,
+                  Fuzzy TOPSIS, Fuzzy VIKOR, Fuzzy PROMETHEE, Fuzzy COPRAS, Fuzzy EDAS
         
         Parameters
         ----------
@@ -176,30 +194,109 @@ class OutputManager:
         """
         entities = panel_data.entities
         
-        # Get TOPSIS distances from result object (correct attribute names: d_positive, d_negative)
+        # Get TOPSIS distances from result object
         topsis_result = mcdm_results.get('topsis_result')
         d_positive = to_array(topsis_result.d_positive) if topsis_result and hasattr(topsis_result, 'd_positive') else np.full(len(entities), np.nan)
         d_negative = to_array(topsis_result.d_negative) if topsis_result and hasattr(topsis_result, 'd_negative') else np.full(len(entities), np.nan)
         
+        # Build comprehensive DataFrame with all 11 MCDM methods
         df = pd.DataFrame({
             'Entity': entities,
+            # Traditional MCDM Methods
             'TOPSIS_Score': to_array(mcdm_results['topsis_scores']),
             'TOPSIS_Rank': to_array(mcdm_results['topsis_rankings']),
             'TOPSIS_Distance_Positive': d_positive,
             'TOPSIS_Distance_Negative': d_negative,
             'Dynamic_TOPSIS_Score': to_array(mcdm_results['dynamic_topsis_scores']),
-            'Fuzzy_TOPSIS_Score': to_array(mcdm_results['fuzzy_scores']),
             'VIKOR_Q': to_array(mcdm_results['vikor']['Q']),
             'VIKOR_S': to_array(mcdm_results['vikor']['S']),
             'VIKOR_R': to_array(mcdm_results['vikor']['R']),
             'VIKOR_Rank': to_array(mcdm_results['vikor']['rankings']),
+            'PROMETHEE_Phi_Net': to_array(mcdm_results['promethee']['phi_net']),
+            'PROMETHEE_Phi_Positive': to_array(mcdm_results['promethee']['phi_positive']),
+            'PROMETHEE_Phi_Negative': to_array(mcdm_results['promethee']['phi_negative']),
+            'PROMETHEE_Rank': to_array(mcdm_results['promethee']['rankings']),
+            'COPRAS_Utility': to_array(mcdm_results['copras']['utility_degree']),
+            'COPRAS_Q': to_array(mcdm_results['copras']['Q']),
+            'COPRAS_Rank': to_array(mcdm_results['copras']['rankings']),
+            'EDAS_AS': to_array(mcdm_results['edas']['AS']),
+            'EDAS_SP': to_array(mcdm_results['edas']['SP']),
+            'EDAS_SN': to_array(mcdm_results['edas']['SN']),
+            'EDAS_Rank': to_array(mcdm_results['edas']['rankings']),
+            # Fuzzy MCDM Methods
+            'Fuzzy_TOPSIS_Score': to_array(mcdm_results['fuzzy_topsis']['scores']),
+            'Fuzzy_TOPSIS_Rank': to_array(mcdm_results['fuzzy_topsis']['rankings']),
+            'Fuzzy_VIKOR_Q': to_array(mcdm_results['fuzzy_vikor']['Q']),
+            'Fuzzy_VIKOR_S': to_array(mcdm_results['fuzzy_vikor']['S']),
+            'Fuzzy_VIKOR_R': to_array(mcdm_results['fuzzy_vikor']['R']),
+            'Fuzzy_VIKOR_Rank': to_array(mcdm_results['fuzzy_vikor']['rankings']),
+            'Fuzzy_PROMETHEE_Phi_Net': to_array(mcdm_results['fuzzy_promethee']['phi_net']),
+            'Fuzzy_PROMETHEE_Rank': to_array(mcdm_results['fuzzy_promethee']['rankings']),
+            'Fuzzy_COPRAS_Utility': to_array(mcdm_results['fuzzy_copras']['utility_degree']),
+            'Fuzzy_COPRAS_Q': to_array(mcdm_results['fuzzy_copras']['Q']),
+            'Fuzzy_COPRAS_Rank': to_array(mcdm_results['fuzzy_copras']['rankings']),
+            'Fuzzy_EDAS_AS': to_array(mcdm_results['fuzzy_edas']['AS']),
+            'Fuzzy_EDAS_Rank': to_array(mcdm_results['fuzzy_edas']['rankings']),
         })
         
-        # Sort by TOPSIS score
+        # Sort by TOPSIS score (primary ranking criterion)
         df = df.sort_values('TOPSIS_Score', ascending=False).reset_index(drop=True)
         
         save_path = self.results_dir / 'mcdm_scores_detailed.csv'
         df.to_csv(save_path, index=False, float_format='%.6f')
+        
+        return str(save_path)
+    
+    def save_mcdm_rank_comparison(self, panel_data: Any,
+                                   mcdm_results: Dict[str, Any]) -> str:
+        """
+        Save a comparison matrix of rankings from all 11 MCDM methods.
+        
+        This provides a clear side-by-side comparison of how each method
+        ranks the alternatives, useful for analyzing method agreement.
+        
+        Parameters
+        ----------
+        panel_data : PanelData
+            Panel data object
+        mcdm_results : Dict
+            MCDM analysis results
+        
+        Returns
+        -------
+        str
+            Path to saved file
+        """
+        entities = panel_data.entities
+        
+        # Build ranking comparison DataFrame
+        df = pd.DataFrame({
+            'Entity': entities,
+            'TOPSIS': to_array(mcdm_results['topsis_rankings']),
+            'Dynamic_TOPSIS': len(entities) - np.argsort(np.argsort(to_array(mcdm_results['dynamic_topsis_scores']))),
+            'VIKOR': to_array(mcdm_results['vikor']['rankings']),
+            'PROMETHEE': to_array(mcdm_results['promethee']['rankings']),
+            'COPRAS': to_array(mcdm_results['copras']['rankings']),
+            'EDAS': to_array(mcdm_results['edas']['rankings']),
+            'Fuzzy_TOPSIS': to_array(mcdm_results['fuzzy_topsis']['rankings']),
+            'Fuzzy_VIKOR': to_array(mcdm_results['fuzzy_vikor']['rankings']),
+            'Fuzzy_PROMETHEE': to_array(mcdm_results['fuzzy_promethee']['rankings']),
+            'Fuzzy_COPRAS': to_array(mcdm_results['fuzzy_copras']['rankings']),
+            'Fuzzy_EDAS': to_array(mcdm_results['fuzzy_edas']['rankings']),
+        })
+        
+        # Add mean rank and rank standard deviation across all methods
+        rank_cols = [c for c in df.columns if c != 'Entity']
+        df['Mean_Rank'] = df[rank_cols].mean(axis=1)
+        df['Rank_StdDev'] = df[rank_cols].std(axis=1)
+        df['Rank_Range'] = df[rank_cols].max(axis=1) - df[rank_cols].min(axis=1)
+        
+        # Sort by mean rank
+        df = df.sort_values('Mean_Rank').reset_index(drop=True)
+        df.insert(0, 'Consensus_Rank', range(1, len(df) + 1))
+        
+        save_path = self.results_dir / 'mcdm_rank_comparison.csv'
+        df.to_csv(save_path, index=False, float_format='%.2f')
         
         return str(save_path)
     
@@ -516,8 +613,8 @@ class OutputManager:
         report.append("")
         agreement_level = "excellent" if kendall_w > 0.8 else "strong" if kendall_w > 0.7 else "moderate" if kendall_w > 0.5 else "weak"
         report.append(f"  2. METHOD AGREEMENT: Kendall's W coefficient of {kendall_w:.4f} indicates {agreement_level}")
-        report.append(f"     agreement among the 10+ MCDM methods employed, providing high confidence in")
-        report.append(f"     the robustness of our rankings.")
+        report.append(f"     agreement among the 11 MCDM methods employed (6 traditional + 5 fuzzy),")
+        report.append(f"     providing high confidence in the robustness of our rankings.")
         report.append("")
         report.append(f"  3. PREDICTIVE ACCURACY: Machine learning models achieve R² = {rf_r2:.4f}, demonstrating")
         report.append(f"     strong capability to explain and forecast sustainability performance patterns.")
@@ -566,13 +663,25 @@ class OutputManager:
         report.append("    • PCA Method: Extracts weights from principal component loadings and explained variance")
         report.append("    • Ensemble Weights: Integrated hybrid of Entropy, CRITIC and PCA weights")
         report.append("")
-        report.append("  MCDM METHODS (10 methods total):")
-        report.append("    Traditional: TOPSIS, Dynamic TOPSIS, VIKOR, PROMETHEE, COPRAS, EDAS")
-        report.append("    Fuzzy: Fuzzy TOPSIS, Fuzzy VIKOR, Fuzzy PROMETHEE, Fuzzy COPRAS, Fuzzy EDAS")
+        report.append("  MCDM METHODS (11 methods total):")
+        report.append("    Traditional Methods:")
+        report.append("      1. TOPSIS - Technique for Order Preference by Similarity to Ideal Solution")
+        report.append("      2. Dynamic TOPSIS - Panel data extension with temporal dynamics")
+        report.append("      3. VIKOR - Multi-criteria optimization and compromise solution")
+        report.append("      4. PROMETHEE - Preference ranking with pairwise comparisons")
+        report.append("      5. COPRAS - Complex proportional assessment of alternatives")
+        report.append("      6. EDAS - Evaluation based on distance from average solution")
+        report.append("    Fuzzy Extensions (handling temporal uncertainty):")
+        report.append("      7. Fuzzy TOPSIS")
+        report.append("      8. Fuzzy VIKOR")
+        report.append("      9. Fuzzy PROMETHEE")
+        report.append("      10. Fuzzy COPRAS")
+        report.append("      11. Fuzzy EDAS")
         report.append("")
         report.append("  MACHINE LEARNING:")
         report.append("    • Random Forest with time-series cross-validation for feature importance")
-        report.append("    • Ensemble forecasting (Gradient Boosting, Bayesian Ridge, Huber regression)")
+        report.append("    • Unified Ensemble Forecasting (Gradient Boosting + Random Forest + Bayesian Ridge)")
+        report.append("    • Future year prediction using all historical data")
         report.append("")
         report.append("  ENSEMBLE INTEGRATION:")
         report.append("    • Stacking ensemble with meta-learner optimization")
@@ -742,8 +851,109 @@ class OutputManager:
         report.append(f"  Mean Dynamic Score: {d_scores.mean():.6f}")
         report.append("")
         
+        # PROMETHEE Analysis
+        report.append("3.5 PROMETHEE (Preference Ranking Organization Method)")
+        report.append("-" * 50)
+        report.append("")
+        report.append("PROMETHEE employs pairwise comparison with preference functions to establish")
+        report.append("dominance relationships. The net flow (Φ_net) represents overall preference,")
+        report.append("where higher values indicate better performance.")
+        report.append("")
+        
+        promethee = mcdm_results['promethee']
+        phi_net = to_array(promethee['phi_net'])
+        phi_pos = to_array(promethee['phi_positive'])
+        phi_neg = to_array(promethee['phi_negative'])
+        prom_ranks = to_array(promethee['rankings'])
+        
+        report.append("  PROMETHEE Flow Metrics:")
+        report.append(f"    Φ_net (Net Flow) Range: [{phi_net.min():.6f}, {phi_net.max():.6f}]")
+        report.append(f"    Φ+ (Positive Flow) Range: [{phi_pos.min():.6f}, {phi_pos.max():.6f}]")
+        report.append(f"    Φ- (Negative Flow) Range: [{phi_neg.min():.6f}, {phi_neg.max():.6f}]")
+        report.append("")
+        
+        report.append("  Top 5 PROMETHEE II Rankings:")
+        top_prom = np.argsort(prom_ranks)[:5]
+        for i, idx in enumerate(top_prom):
+            report.append(f"    {i+1}. {panel_data.entities[idx]}: Φ_net = {phi_net[idx]:.6f}")
+        report.append("")
+        
+        # COPRAS Analysis
+        report.append("3.6 COPRAS (Complex Proportional Assessment)")
+        report.append("-" * 50)
+        report.append("")
+        report.append("COPRAS evaluates alternatives by separately assessing beneficial and non-beneficial")
+        report.append("criteria, with utility degree as the final performance measure (0-100%).")
+        report.append("")
+        
+        copras = mcdm_results['copras']
+        utility = to_array(copras['utility_degree'])
+        copras_Q = to_array(copras['Q'])
+        copras_ranks = to_array(copras['rankings'])
+        
+        report.append("  COPRAS Performance Metrics:")
+        report.append(f"    Utility Degree Range: {utility.min():.2f}% - {utility.max():.2f}%")
+        report.append(f"    Mean Utility: {utility.mean():.2f}%")
+        report.append(f"    Q Index Range: [{copras_Q.min():.6f}, {copras_Q.max():.6f}]")
+        report.append("")
+        
+        report.append("  Top 5 COPRAS Rankings:")
+        top_copras = np.argsort(copras_ranks)[:5]
+        for i, idx in enumerate(top_copras):
+            report.append(f"    {i+1}. {panel_data.entities[idx]}: Utility = {utility[idx]:.2f}%")
+        report.append("")
+        
+        # EDAS Analysis
+        report.append("3.7 EDAS (Evaluation based on Distance from Average Solution)")
+        report.append("-" * 50)
+        report.append("")
+        report.append("EDAS assesses alternatives based on distance from average solution (AV).")
+        report.append("The appraisal score (AS) combines positive and negative distances, where")
+        report.append("higher AS values indicate superior performance. Range: 0 to 1.")
+        report.append("")
+        
+        edas = mcdm_results['edas']
+        edas_AS = to_array(edas['AS'])
+        edas_SP = to_array(edas['SP'])
+        edas_SN = to_array(edas['SN'])
+        edas_ranks = to_array(edas['rankings'])
+        
+        report.append("  EDAS Metrics:")
+        report.append(f"    Appraisal Score (AS) Range: [{edas_AS.min():.6f}, {edas_AS.max():.6f}]")
+        report.append(f"    Mean AS: {edas_AS.mean():.6f}")
+        report.append(f"    Positive Distance (SP) Mean: {edas_SP.mean():.6f}")
+        report.append(f"    Negative Distance (SN) Mean: {edas_SN.mean():.6f}")
+        report.append("")
+        
+        report.append("  Top 5 EDAS Rankings:")
+        top_edas = np.argsort(edas_ranks)[:5]
+        for i, idx in enumerate(top_edas):
+            report.append(f"    {i+1}. {panel_data.entities[idx]}: AS = {edas_AS[idx]:.6f}")
+        report.append("")
+        
+        # Fuzzy Extensions Summary
+        report.append("3.8 Fuzzy MCDM Extensions")
+        report.append("-" * 50)
+        report.append("")
+        report.append("All five traditional methods (TOPSIS, VIKOR, PROMETHEE, COPRAS, EDAS) have")
+        report.append("fuzzy counterparts that handle temporal uncertainty using triangular fuzzy")
+        report.append("numbers derived from panel data variance.")
+        report.append("")
+        
+        fuzzy_vikor = mcdm_results['fuzzy_vikor']
+        fuzzy_prom = mcdm_results['fuzzy_promethee']
+        fuzzy_copras = mcdm_results['fuzzy_copras']
+        fuzzy_edas = mcdm_results['fuzzy_edas']
+        
+        report.append("  Fuzzy Method Performance Summary:")
+        report.append(f"    Fuzzy VIKOR - Best Q: {to_array(fuzzy_vikor['Q']).min():.6f}")
+        report.append(f"    Fuzzy PROMETHEE - Best Φ_net: {to_array(fuzzy_prom['phi_net']).max():.6f}")
+        report.append(f"    Fuzzy COPRAS - Best Utility: {to_array(fuzzy_copras['utility_degree']).max():.2f}%")
+        report.append(f"    Fuzzy EDAS - Best AS: {to_array(fuzzy_edas['AS']).max():.6f}")
+        report.append("")
+        
         # Method Agreement
-        report.append("3.5 Cross-Method Validation")
+        report.append("3.9 Cross-Method Validation and Agreement")
         report.append("-" * 50)
         report.append("")
         report.append("To validate ranking robustness, we compare results across all MCDM methods:")
@@ -1500,6 +1710,8 @@ class OutputManager:
         safe_save('rankings', self.save_rankings, panel_data, mcdm_results, ensemble_results)
         
         safe_save('mcdm_scores', self.save_mcdm_scores, panel_data, mcdm_results)
+        
+        safe_save('mcdm_rank_comparison', self.save_mcdm_rank_comparison, panel_data, mcdm_results)
         
         # ML results (may be partially empty)
         if ml_results:

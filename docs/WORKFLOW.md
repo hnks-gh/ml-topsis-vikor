@@ -74,12 +74,12 @@ The ML-MCDM pipeline analyzes panel data (entities × time periods × criteria) 
 **Data Structure:**
 ```
 PanelData
-├── long: DataFrame         # Long format (Year, Province, C01...C20)
+├── long: DataFrame         # Long format (Year, Province, C01...C29)
 ├── wide: Dict[year, DataFrame]  # Province × Components per year
 ├── cross_section: Dict[year, DataFrame]
 ├── provinces: List[str]    # Entity identifiers (64 provinces)
-├── years: List[int]        # Time periods (2020-2024)
-└── components: List[str]   # Criteria names (C01-C20)
+├── years: List[int]        # Time periods (2011-2024)
+└── components: List[str]   # Criteria names (C01-C29)
 ```
 
 ---
@@ -115,15 +115,16 @@ PanelData
 
 ### Phase 4: ML Analysis
 
-**Purpose:** Feature importance analysis and validation using Random Forest.
+**Purpose:** Advanced ML forecasting using UnifiedForecaster ensemble.
 
 | Component | Description |
-|-----------|-------------|
-| Random Forest TS | Time-series cross-validation |
+|-----------|-----------|
+| UnifiedForecaster | Ensemble of 7 models (GB, RF, ET, Bayesian, Huber, MLP, Attention) |
+| Time-series CV | Cross-validation respecting temporal order |
 | Feature Importance | Component contribution analysis |
-| CV Scores | Model validation metrics |
+| Model Weights | Automatic model weighting based on CV R² scores |
 
-**Output:** `feature_importance.csv`, `cv_scores.csv`, `rf_test_metrics.csv`
+**Output:** `feature_importance.csv`, `cv_scores.csv`, `forecast_model_weights_2025.csv`
 
 ---
 
@@ -157,15 +158,16 @@ PanelData
 
 ### Phase 6.5: Future Prediction
 
-**Purpose:** Predict next year (2025) rankings using ML forecasting.
+**Purpose:** Predict next year (2025) rankings using UnifiedForecaster ensemble.
 
 | Component | Description |
-|-----------|-------------|
-| Predicted Components | Forecasted criterion values for 2025 |
+|-----------|-----------|
+| Predicted Components | Forecasted criterion values for 2025 using 7-model ensemble |
 | Predicted Rankings | TOPSIS/VIKOR rankings for 2025 |
 | Uncertainty | Prediction confidence intervals |
+| Model Weights | Contribution of each forecaster (GB, RF, ET, Bayesian, Huber, MLP, Attention) |
 
-**Output:** `predicted_rankings_2025.csv`, `predicted_components_2025.csv`, `prediction_uncertainty_2025.csv`
+**Output:** `predicted_rankings_2025.csv`, `predicted_components_2025.csv`, `prediction_uncertainty_2025.csv`, `forecast_model_weights_2025.csv`
 
 ---
 

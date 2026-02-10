@@ -1,12 +1,12 @@
 {
-  "timestamp": "2026-02-10T23:52:57.132852",
+  "timestamp": "2026-02-11T01:20:04.445836",
   "config": {
     "paths": {
       "base_dir": "C:\\Users\\hoang\\Documents\\ml-mcdm"
     },
     "panel": {
       "n_provinces": 64,
-      "n_components": 20,
+      "n_components": 29,
       "years": [
         2020,
         2021,

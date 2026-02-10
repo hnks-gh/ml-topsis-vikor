@@ -16,7 +16,6 @@ CONFIG = {
     'data_path': 'data/data.csv',
     'n_provinces': 64,
     'n_years': 5,
-    'n_components': 20,
     'output_dir': 'outputs',
 }
 
@@ -36,7 +35,7 @@ def main():
     config = get_default_config()
     config.panel.n_provinces = CONFIG['n_provinces']
     config.panel.years = list(range(2020, 2020 + CONFIG['n_years']))
-    config.panel.n_components = CONFIG['n_components']
+    # n_components will be read from actual data
     
     print(f"{'─'*70}")
     print(f"  CONFIGURATION")
@@ -44,8 +43,9 @@ def main():
     print(f"\n  Data source: {data_path if data_path else 'Synthetic generation'}")
     print(f"  Entities: {CONFIG['n_provinces']}")
     print(f"  Time periods: {CONFIG['n_years']}")
-    print(f"  Components: {CONFIG['n_components']}")
+    print(f"  Criteria: Auto-detected from data")
     print(f"  Output: {CONFIG['output_dir']}/")
+    print(f"  MCDM methods: 11 (6 traditional + 5 fuzzy)\n")
     
     print(f"\n{'─'*70}")
     print(f"  RUNNING ANALYSIS PIPELINE")
@@ -104,14 +104,48 @@ def print_results(result):
         print(f"     {int(row['final_rank']):<6} {row['province']:<20} "
               f"{row['final_score']:.4f}      {row['kendall_w']:.4f}")
     
-    # Method comparison
-    print("\n  📈 MCDM METHOD COMPARISON")
-    print(f"     {'Method':<20} Top Score")
-    print(f"     {'-'*35}")
-    print(f"     {'TOPSIS':<20} {result.topsis_scores.max():.4f}")
-    print(f"     {'Dynamic TOPSIS':<20} {result.dynamic_topsis_scores.max():.4f}")
-    print(f"     {'Fuzzy TOPSIS':<20} {result.fuzzy_topsis_scores.max():.4f}")
-    print(f"     {'VIKOR (1-Q)':<20} {1 - result.vikor_results['Q'].min():.4f}")
+    # MCDM Method Comparison - All 11 Methods
+    print("\n  📈 MCDM METHOD COMPARISON (11 Methods)")
+    print(f"     {'Method':<25} {'Top Score':>12} {'Metric Type'}")
+    print(f"     {'-'*55}")
+    
+    # Traditional Methods (6)
+    print("     \033[1mTraditional Methods:\033[0m")
+    print(f"     {'  TOPSIS':<25} {result.topsis_scores.max():>12.4f} {'Higher=Better'}")
+    print(f"     {'  Dynamic TOPSIS':<25} {result.dynamic_topsis_scores.max():>12.4f} {'Higher=Better'}")
+    print(f"     {'  VIKOR':<25} {result.vikor_results['Q'].min():>12.4f} {'Lower=Better'}")
+    
+    # Get PROMETHEE, COPRAS, EDAS from pipeline result
+    if hasattr(result, 'config'):
+        # Access from saved results if available
+        import pandas as pd
+        try:
+            mcdm_scores = pd.read_csv(f"{CONFIG['output_dir']}/results/mcdm_scores_detailed.csv")
+            promethee_max = mcdm_scores['PROMETHEE_Phi_Net'].max()
+            copras_max = mcdm_scores['COPRAS_Utility'].max()
+            edas_max = mcdm_scores['EDAS_AS'].max()
+            print(f"     {'  PROMETHEE':<25} {promethee_max:>12.4f} {'Higher=Better'}")
+            print(f"     {'  COPRAS':<25} {copras_max:>12.2f} {'% Utility'}")
+            print(f"     {'  EDAS':<25} {edas_max:>12.4f} {'Higher=Better'}")
+        except:
+            pass
+    
+    # Fuzzy Methods (5)
+    print("\n     \033[1mFuzzy Methods:\033[0m")
+    print(f"     {'  Fuzzy TOPSIS':<25} {result.fuzzy_topsis_scores.max():>12.4f} {'Higher=Better'}")
+    
+    if hasattr(result, 'config'):
+        try:
+            fuzzy_vikor_min = mcdm_scores['Fuzzy_VIKOR_Q'].min()
+            fuzzy_prom_max = mcdm_scores['Fuzzy_PROMETHEE_Phi_Net'].max()
+            fuzzy_copras_max = mcdm_scores['Fuzzy_COPRAS_Utility'].max()
+            fuzzy_edas_max = mcdm_scores['Fuzzy_EDAS_AS'].max()
+            print(f"     {'  Fuzzy VIKOR':<25} {fuzzy_vikor_min:>12.4f} {'Lower=Better'}")
+            print(f"     {'  Fuzzy PROMETHEE':<25} {fuzzy_prom_max:>12.4f} {'Higher=Better'}")
+            print(f"     {'  Fuzzy COPRAS':<25} {fuzzy_copras_max:>12.2f} {'% Utility'}")
+            print(f"     {'  Fuzzy EDAS':<25} {fuzzy_edas_max:>12.4f} {'Higher=Better'}")
+        except:
+            pass
     
     # Key metrics
     print("\n  🔗 KEY METRICS")

@@ -5,7 +5,7 @@ Stacked Ensemble of Fuzzy MCDM and Random Forest Forecasting for Robust Sustaina
 This framework integrates MCDM methods (5 traditional + 5 fuzzy variants) with Machine Learning to rank provinces across multiple criteria. It combines multiple decision-making techniques with ensemble forecasting for comprehensive analysis and robust future predictions.
 
 ```
-Panel Data (64 provinces × 5 years × 20 criteria)
+Panel Data (64 provinces × 14 years × 29 criteria)
          │
          ├─► Weight Calculation (Entropy, CRITIC, Ensemble)
          │
@@ -64,7 +64,7 @@ ml-mcdm/
 │       └── docs/README.md
 │
 ├── data/
-│   └── data.csv            # Input: Year, Province, C01-C20
+│   └── data.csv            # Input: Year, Province, C01-C29 (2011-2024)
 │
 ├── outputs/
 │   ├── figures/            # PNG charts (300 DPI)

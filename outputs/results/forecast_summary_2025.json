@@ -17,14 +17,14 @@
     2024
   ],
   "n_entities": 64,
-  "n_components": 20,
+  "n_components": 29,
   "top_predicted_entity": "P14",
-  "top_predicted_score": 0.8401939091130358,
-  "mean_predicted_score": 0.49958516665474273,
+  "top_predicted_score": 0.8585260461831229,
+  "mean_predicted_score": 0.4895338043778361,
   "model_contributions": {
-    "GradientBoosting": 0.16504936957292668,
-    "RandomForest": 1.9381115135717136e-06,
-    "BayesianRidge": 0.8344406776431966,
-    "Huber": 0.0005080146723631938
+    "GradientBoosting": 0.0022442642378238346,
+    "RandomForest": 5.365050833966606e-07,
+    "BayesianRidge": 0.9977551667247605,
+    "Huber": 3.253233232169739e-08
   }
 }

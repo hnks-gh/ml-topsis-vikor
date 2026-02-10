@@ -583,7 +583,7 @@ class LoggerFactory:
             else:
                 # Simple text format without colors
                 console_fmt = CleanFormatter(
-                    fmt='%(asctime)s | %(levelname)-8s | %(message)s',
+                    fmt='%(asctime)s | %(message)s',
                     datefmt=CONSOLE_DATE_FORMAT
                 )
             console_handler.setFormatter(console_fmt)

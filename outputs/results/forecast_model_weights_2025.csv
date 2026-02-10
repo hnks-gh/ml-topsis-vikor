@@ -1,5 +1,5 @@
 Model,Weight
-BayesianRidge,0.834441
-GradientBoosting,0.165049
-Huber,0.000508
-RandomForest,0.000002
+BayesianRidge,0.997755
+GradientBoosting,0.002244
+RandomForest,0.000001
+Huber,0.000000

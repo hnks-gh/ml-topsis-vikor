@@ -1,5 +1,5 @@
 {
-  "kendall_w": 0.9709373959373959,
+  "kendall_w": 0.9680796476251021,
   "interpretation": "Strong agreement",
   "n_entities": 64,
   "aggregation_method": "borda",

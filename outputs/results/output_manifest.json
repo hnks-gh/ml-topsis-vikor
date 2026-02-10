@@ -1,10 +1,11 @@
 {
-  "timestamp": "2026-02-10T23:52:57.019512",
-  "execution_time": 450.36936211586,
+  "timestamp": "2026-02-11T01:20:04.302512",
+  "execution_time": 721.0255048274994,
   "files": {
     "weights": "C:\\Users\\hoang\\Documents\\ml-mcdm\\outputs\\results\\weights_analysis.csv",
     "rankings": "C:\\Users\\hoang\\Documents\\ml-mcdm\\outputs\\results\\final_rankings.csv",
     "mcdm_scores": "C:\\Users\\hoang\\Documents\\ml-mcdm\\outputs\\results\\mcdm_scores_detailed.csv",
+    "mcdm_rank_comparison": "C:\\Users\\hoang\\Documents\\ml-mcdm\\outputs\\results\\mcdm_rank_comparison.csv",
     "ml_results": {
       "feature_importance": "C:\\Users\\hoang\\Documents\\ml-mcdm\\outputs\\results\\feature_importance.csv",
       "cv_scores": "C:\\Users\\hoang\\Documents\\ml-mcdm\\outputs\\results\\cv_scores.csv",
