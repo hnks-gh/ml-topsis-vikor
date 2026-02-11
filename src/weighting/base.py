@@ -16,7 +16,8 @@ class WeightResult:
     
     @property
     def as_array(self) -> np.ndarray:
-        return np.array(list(self.weights.values()))
+        """Return weights as numpy array in sorted key order for reproducibility."""
+        return np.array([self.weights[k] for k in sorted(self.weights.keys())])
     
     @property
     def as_series(self) -> pd.Series:
@@ -53,9 +54,9 @@ def calculate_weights(data: pd.DataFrame, method: str = "robust_global") -> Weig
         return MERECWeightCalculator().calculate(data)
     elif method == "std_dev":
         return StandardDeviationWeightCalculator().calculate(data)
-    elif method in ("robust_global", "ensemble"):
-        from .robust_global import RobustGlobalWeighting
-        calc = RobustGlobalWeighting()
+    elif method in ("robust_global", "ensemble", "hybrid"):
+        from .hybrid_weighting import HybridWeightingPipeline
+        calc = HybridWeightingPipeline()
         return calc.calculate(data)
     elif method == "equal":
         cols = data.columns.tolist()

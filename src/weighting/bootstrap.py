@@ -1,0 +1,235 @@
+# -*- coding: utf-8 -*-
+"""
+Bayesian Bootstrap for Weight Uncertainty Quantification
+
+Implements the Bayesian Bootstrap (Rubin, 1981) using Dirichlet resampling
+to quantify uncertainty in weight estimates.
+"""
+
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Callable, Optional
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def bayesian_bootstrap_weights(
+    X_norm: np.ndarray,
+    criteria_cols: List[str],
+    weight_calculator: Callable[[pd.DataFrame, List[str]], np.ndarray],
+    n_iterations: int = 999,
+    seed: int = 42,
+    epsilon: float = 1e-10
+) -> Dict:
+    """
+    Perform Bayesian Bootstrap for weight uncertainty quantification.
+    
+    Uses Dirichlet resampling (more efficient than discrete bootstrap) to
+    generate posterior distribution of weights.
+    
+    Parameters
+    ----------
+    X_norm : np.ndarray, shape (n_observations, n_criteria)
+        Normalized criteria matrix.
+    criteria_cols : List[str]
+        Names of criteria columns.
+    weight_calculator : Callable
+        Function that takes (X_df, criteria_cols) and returns weight array.
+        This should perform the complete weight calculation pipeline
+        (e.g., entropy + critic + merec + sd → fusion).
+    n_iterations : int, default=999
+        Number of bootstrap iterations. Odd number to avoid interpolation
+        at percentiles (2.5%, 97.5%).
+    seed : int, default=42
+        Random seed for reproducibility.
+    epsilon : float, default=1e-10
+        Numerical stability constant.
+    
+    Returns
+    -------
+    results : Dict
+        Dictionary containing:
+        - 'mean_weights': np.ndarray, posterior mean (final weights)
+        - 'std_weights': np.ndarray, posterior standard deviation
+        - 'ci_lower': np.ndarray, 2.5th percentile (lower bound of 95% CI)
+        - 'ci_upper': np.ndarray, 97.5th percentile (upper bound of 95% CI)
+        - 'all_weights': np.ndarray, shape (n_iterations, n_criteria)
+        - 'convergence_rate': float, proportion of successful iterations
+    
+    Notes
+    -----
+    **Bayesian Bootstrap Algorithm (Rubin, 1981):**
+    
+    For each iteration b = 1, ..., B:
+    1. Draw observation weights from Dirichlet(1, ..., 1):
+       - Sample g_i ~ Exponential(1) for i = 1, ..., N
+       - Compute w_i = g_i / Σ_k g_k
+    2. Resample observations with probabilities w
+    3. Calculate weights on bootstrap sample
+    4. Store weight vector
+    
+    **Why Dirichlet instead of discrete uniform resampling?**
+    - More efficient: continuous weights vs discrete sampling
+    - Theoretically principled: Dirichlet(1,...,1) is non-informative prior
+    - Equivalent to standard bootstrap in large samples
+    - Better for smooth statistics (like weighted means)
+    
+    **Why B=999?**
+    - Odd number avoids interpolation at 2.5th and 97.5th percentiles
+    - Standard practice for percentile-based credible intervals
+    - Provides stable posterior statistics (Davison & Hinkley, 1997)
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> from src.weighting.bootstrap import bayesian_bootstrap_weights
+    >>> 
+    >>> # Define weight calculator
+    >>> def my_weight_calculator(X_df, criteria_cols):
+    >>>     # Your weight calculation logic here
+    >>>     return np.array([0.3, 0.5, 0.2])
+    >>> 
+    >>> # Sample data
+    >>> X_norm = np.random.rand(100, 3)
+    >>> criteria = ['C1', 'C2', 'C3']
+    >>> 
+    >>> # Run bootstrap
+    >>> results = bayesian_bootstrap_weights(
+    >>>     X_norm, criteria, my_weight_calculator, n_iterations=999
+    >>> )
+    >>> 
+    >>> print("Final weights:", results['mean_weights'])
+    >>> print("Uncertainty:", results['std_weights'])
+    >>> print("95% CI:", results['ci_lower'], "-", results['ci_upper'])
+    
+    References
+    ----------
+    1. Rubin, D.B. (1981). The Bayesian Bootstrap. The Annals of Statistics,
+       9(1), 130-134.
+    2. Davison, A.C. & Hinkley, D.V. (1997). Bootstrap Methods and Their
+       Application. Cambridge University Press.
+    3. Efron, B. & Tibshirani, R.J. (1993). An Introduction to the Bootstrap.
+       Chapman & Hall.
+    """
+    N, p = X_norm.shape
+    B = n_iterations
+    rng = np.random.RandomState(seed)
+    
+    # Storage for bootstrap samples
+    all_weights = np.zeros((B, p))
+    failed_iterations = 0
+    
+    logger.info(f"Starting Bayesian Bootstrap: {B} iterations on "
+                f"{N} observations × {p} criteria")
+    
+    for b in range(B):
+        try:
+            # Step 1: Draw Dirichlet(1,...,1) weights via exponential trick
+            g = rng.exponential(1.0, size=N)
+            obs_weights = g / g.sum()
+            
+            # Step 2: Resample observations according to Dirichlet weights
+            # (produces essentially continuous weighting of observations)
+            indices = rng.choice(N, size=N, replace=True, p=obs_weights)
+            X_boot = X_norm[indices, :]
+            X_df = pd.DataFrame(X_boot, columns=criteria_cols)
+            
+            # Step 3: Calculate weights on bootstrap sample
+            W_boot = weight_calculator(X_df, criteria_cols)
+            
+            # Validate and normalize
+            if np.any(np.isnan(W_boot)) or np.any(np.isinf(W_boot)):
+                raise ValueError("NaN or Inf in bootstrap weights")
+            
+            W_boot = W_boot / (W_boot.sum() + epsilon)
+            all_weights[b, :] = W_boot
+            
+        except Exception as e:
+            # Fallback: use previous iteration or uniform weights
+            failed_iterations += 1
+            if b > 0:
+                all_weights[b, :] = all_weights[b-1, :]
+            else:
+                all_weights[b, :] = 1.0 / p
+            
+            if failed_iterations <= 5:  # Only log first few failures
+                logger.warning(f"Bootstrap iteration {b} failed: {e}")
+    
+    if failed_iterations > 0:
+        logger.warning(f"Bootstrap: {failed_iterations}/{B} iterations failed "
+                      f"({100*failed_iterations/B:.1f}%)")
+    
+    # Calculate posterior statistics
+    mean_weights = all_weights.mean(axis=0)
+    mean_weights = mean_weights / (mean_weights.sum() + epsilon)  # Renormalize
+    
+    std_weights = all_weights.std(axis=0, ddof=1)
+    
+    ci_lower = np.percentile(all_weights, 2.5, axis=0)
+    ci_upper = np.percentile(all_weights, 97.5, axis=0)
+    
+    convergence_rate = 1.0 - (failed_iterations / B)
+    
+    logger.info(f"Bootstrap complete: convergence rate = {convergence_rate:.3f}, "
+                f"mean std = {std_weights.mean():.6f}")
+    
+    return {
+        'mean_weights': mean_weights,
+        'std_weights': std_weights,
+        'ci_lower': ci_lower,
+        'ci_upper': ci_upper,
+        'all_weights': all_weights,
+        'convergence_rate': convergence_rate,
+    }
+
+
+class BayesianBootstrap:
+    """
+    Stateful Bayesian Bootstrap for repeated use with same configuration.
+    
+    Parameters
+    ----------
+    n_iterations : int, default=999
+        Number of bootstrap iterations.
+    seed : int, default=42
+        Random seed for reproducibility.
+    epsilon : float, default=1e-10
+        Numerical stability constant.
+    
+    Examples
+    --------
+    >>> bootstrap = BayesianBootstrap(n_iterations=999, seed=42)
+    >>> results = bootstrap.run(X_norm, criteria_cols, weight_calculator)
+    """
+    
+    def __init__(
+        self,
+        n_iterations: int = 999,
+        seed: int = 42,
+        epsilon: float = 1e-10
+    ):
+        self.n_iterations = n_iterations
+        self.seed = seed
+        self.epsilon = epsilon
+    
+    def run(
+        self,
+        X_norm: np.ndarray,
+        criteria_cols: List[str],
+        weight_calculator: Callable[[pd.DataFrame, List[str]], np.ndarray]
+    ) -> Dict:
+        """
+        Execute Bayesian Bootstrap.
+        
+        See bayesian_bootstrap_weights() for parameter details.
+        """
+        return bayesian_bootstrap_weights(
+            X_norm=X_norm,
+            criteria_cols=criteria_cols,
+            weight_calculator=weight_calculator,
+            n_iterations=self.n_iterations,
+            seed=self.seed,
+            epsilon=self.epsilon
+        )

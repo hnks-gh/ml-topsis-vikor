@@ -28,7 +28,36 @@ class StandardDeviationWeightCalculator:
         self.ddof = ddof
     
     def calculate(self, data: pd.DataFrame) -> WeightResult:
-        """Calculate standard deviation weights from decision matrix."""
+        """
+        Calculate standard deviation weights from decision matrix.
+        
+        Parameters
+        ----------
+        data : pd.DataFrame
+            Decision matrix (alternatives × criteria)
+            
+        Returns
+        -------
+        WeightResult
+            Calculated weights with std and CV details
+            
+        Raises
+        ------
+        ValueError
+            If data is empty or has insufficient observations for ddof
+        TypeError
+            If data contains non-numeric columns
+        """
+        # Input validation
+        if data.empty:
+            raise ValueError("Input DataFrame is empty")
+        if len(data) <= self.ddof:
+            raise ValueError(f"Need more than {self.ddof} observations for ddof={self.ddof}")
+        
+        non_numeric = data.select_dtypes(exclude=[np.number]).columns.tolist()
+        if non_numeric:
+            raise TypeError(f"Non-numeric columns found: {non_numeric}")
+        
         columns = data.columns.tolist()
         
         # Calculate standard deviation for each criterion

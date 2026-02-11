@@ -25,7 +25,36 @@ class MERECWeightCalculator:
         self.epsilon = epsilon
     
     def calculate(self, data: pd.DataFrame) -> WeightResult:
-        """Calculate MEREC weights from decision matrix."""
+        """
+        Calculate MEREC weights from decision matrix.
+        
+        Parameters
+        ----------
+        data : pd.DataFrame
+            Decision matrix (alternatives × criteria)
+            
+        Returns
+        -------
+        WeightResult
+            Calculated weights with removal effects details
+            
+        Raises
+        ------
+        ValueError
+            If data is empty or has less than 2 observations
+        TypeError
+            If data contains non-numeric columns
+        """
+        # Input validation
+        if data.empty:
+            raise ValueError("Input DataFrame is empty")
+        if len(data) < 2:
+            raise ValueError("MEREC calculation requires at least 2 observations")
+        
+        non_numeric = data.select_dtypes(exclude=[np.number]).columns.tolist()
+        if non_numeric:
+            raise TypeError(f"Non-numeric columns found: {non_numeric}")
+        
         n_alternatives, n_criteria = data.shape
         columns = data.columns.tolist()
         
