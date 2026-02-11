@@ -16,7 +16,7 @@ Usage
 -----
 >>> from src.mcdm.traditional import TOPSISCalculator, VIKORCalculator
 >>> from src.mcdm.fuzzy import FuzzyTOPSIS, FuzzyVIKOR
->>> from src.weighting import EntropyWeightCalculator, CRITICWeightCalculator, PCAWeightCalculator
+>>> from src.weighting import EntropyWeightCalculator, CRITICWeightCalculator, RobustGlobalWeighting
 """
 
 # Import from traditional submodule
@@ -43,7 +43,8 @@ from .fuzzy import (
 from ..weighting import (
     EntropyWeightCalculator,
     CRITICWeightCalculator,
-    PCAWeightCalculator,
+    MERECWeightCalculator,
+    StandardDeviationWeightCalculator,
     RobustGlobalWeighting,
     WeightResult
 )

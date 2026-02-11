@@ -3,17 +3,21 @@
 Weighting Methods Module
 
 Objective weight calculation methods for MCDM:
-- RobustGlobalWeighting: 7-step global hybrid pipeline (PCA-CRITIC-Entropy
-    + KL-Divergence Fusion + Bayesian Bootstrap) — PRIMARY METHOD
-- Entropy Weights: Information theory-based weighting (standalone utility)
-- CRITIC Weights: Criteria Importance Through Inter-criteria Correlation (standalone utility)
-- PCA Weights: Principal Component Analysis-based multivariate weighting (standalone utility)
+- RobustGlobalWeighting: 4-method hybrid pipeline (Entropy + CRITIC + MEREC + 
+    Standard Deviation → Reliability-Weighted Fusion + Bayesian Bootstrap) — PRIMARY
+- Entropy: Information theory-based weighting (standalone)
+- CRITIC: Criteria Importance Through Inter-criteria Correlation (standalone)
+- MEREC: Method based on Removal Effects of Criteria (standalone)
+- Standard Deviation: Variance-based weighting (standalone)
+- AdvancedWeightFusion: State-of-the-art fusion methods for combining weights
 """
 
 from .robust_global import RobustGlobalWeighting
 from .entropy import EntropyWeightCalculator
 from .critic import CRITICWeightCalculator
-from .pca import PCAWeightCalculator
+from .merec import MERECWeightCalculator
+from .standard_deviation import StandardDeviationWeightCalculator
+from .fusion import AdvancedWeightFusion
 from .base import WeightResult, calculate_weights
 
 __all__ = [
@@ -21,6 +25,8 @@ __all__ = [
     'RobustGlobalWeighting',
     'EntropyWeightCalculator',
     'CRITICWeightCalculator',
-    'PCAWeightCalculator',
+    'MERECWeightCalculator',
+    'StandardDeviationWeightCalculator',
+    'AdvancedWeightFusion',
     'calculate_weights'
 ]

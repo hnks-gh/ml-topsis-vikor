@@ -32,7 +32,7 @@ def calculate_weights(data: pd.DataFrame, method: str = "robust_global") -> Weig
     data : pd.DataFrame
         Decision matrix (alternatives × criteria)
     method : str
-        Weight calculation method: 'entropy', 'critic', 'pca',
+        Weight calculation method: 'entropy', 'critic', 'merec', 'std_dev',
         'robust_global', or 'equal'
     
     Returns
@@ -42,14 +42,17 @@ def calculate_weights(data: pd.DataFrame, method: str = "robust_global") -> Weig
     """
     from .entropy import EntropyWeightCalculator
     from .critic import CRITICWeightCalculator
-    from .pca import PCAWeightCalculator
+    from .merec import MERECWeightCalculator
+    from .standard_deviation import StandardDeviationWeightCalculator
     
     if method == "entropy":
         return EntropyWeightCalculator().calculate(data)
     elif method == "critic":
         return CRITICWeightCalculator().calculate(data)
-    elif method == "pca":
-        return PCAWeightCalculator().calculate(data)
+    elif method == "merec":
+        return MERECWeightCalculator().calculate(data)
+    elif method == "std_dev":
+        return StandardDeviationWeightCalculator().calculate(data)
     elif method in ("robust_global", "ensemble"):
         from .robust_global import RobustGlobalWeighting
         calc = RobustGlobalWeighting()

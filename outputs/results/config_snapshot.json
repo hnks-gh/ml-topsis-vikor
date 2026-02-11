@@ -1,18 +1,16 @@
 {
-  "timestamp": "2026-02-11T01:20:04.445836",
+  "timestamp": "2026-02-11T22:28:10.253649",
   "config": {
     "paths": {
       "base_dir": "C:\\Users\\hoang\\Documents\\ml-mcdm"
     },
     "panel": {
-      "n_provinces": 64,
-      "n_components": 29,
+      "n_provinces": 6,
+      "n_components": 4,
       "years": [
         2020,
         2021,
-        2022,
-        2023,
-        2024
+        2022
       ],
       "province_col": "Province",
       "year_col": "Year",
@@ -93,7 +91,7 @@
       "rolling_window": 2
     },
     "neural": {
-      "enabled": true,
+      "enabled": false,
       "hidden_units": 64,
       "n_layers": 2,
       "dropout": 0.2,
@@ -104,13 +102,7 @@
       "attention": false
     },
     "weighting": {
-      "pca_variance_threshold": 0.8,
       "bootstrap_iterations": 999,
-      "fusion_alphas": [
-        0.3333333333333333,
-        0.3333333333333333,
-        0.3333333333333333
-      ],
       "stability_threshold": 0.95,
       "epsilon": 1e-10
     },
@@ -168,7 +160,8 @@
         "png"
       ],
       "animate_temporal": true,
-      "animation_fps": 2
+      "animation_fps": 2,
+      "enabled": false
     }
   }
 }

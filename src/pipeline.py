@@ -50,8 +50,9 @@ class PipelineResult:
     # Weights
     entropy_weights: np.ndarray
     critic_weights: np.ndarray
-    pca_weights: np.ndarray
-    ensemble_weights: np.ndarray
+    merec_weights: np.ndarray
+    std_dev_weights: np.ndarray
+    fused_weights: np.ndarray
     
     # MCDM Results (Current Year - 2024)
     topsis_scores: np.ndarray
@@ -260,8 +261,9 @@ class MLMCDMPipeline:
             decision_matrix=panel_data.cross_section.values,
             entropy_weights=weights['entropy'],
             critic_weights=weights['critic'],
-            pca_weights=weights['pca'],
-            ensemble_weights=weights['ensemble'],
+            merec_weights=weights['merec'],
+            std_dev_weights=weights['std_dev'],
+            fused_weights=weights['fused'],
             topsis_scores=mcdm_results['topsis_scores'],
             topsis_rankings=mcdm_results['topsis_rankings'],
             dynamic_topsis_scores=mcdm_results['dynamic_topsis_scores'],
@@ -323,9 +325,7 @@ class MLMCDMPipeline:
         
         # Run the unified Robust Global Weighting
         calc = RobustGlobalWeighting(
-            pca_variance_threshold=self.config.weighting.pca_variance_threshold,
             bootstrap_iterations=self.config.weighting.bootstrap_iterations,
-            fusion_alphas=self.config.weighting.fusion_alphas,
             stability_threshold=self.config.weighting.stability_threshold,
             epsilon=self.config.weighting.epsilon,
             seed=self.config.random.seed,
@@ -342,23 +342,27 @@ class MLMCDMPipeline:
         indiv = result.details["individual_weights"]
         entropy_weights = np.array([indiv["entropy"][c] for c in components])
         critic_weights = np.array([indiv["critic"][c] for c in components])
-        pca_weights = np.array([indiv["pca"][c] for c in components])
-        ensemble_weights = np.array([result.weights[c] for c in components])
+        merec_weights = np.array([indiv["merec"][c] for c in components])
+        std_dev_weights = np.array([indiv["std_dev"][c] for c in components])
+        fused_weights = np.array([result.weights[c] for c in components])
         
         # Log results
         self.logger.info(f"  Entropy weights range: [{entropy_weights.min():.4f}, "
                         f"{entropy_weights.max():.4f}]")
         self.logger.info(f"  CRITIC weights range: [{critic_weights.min():.4f}, "
                         f"{critic_weights.max():.4f}]")
-        self.logger.info(f"  PCA weights range: [{pca_weights.min():.4f}, "
-                        f"{pca_weights.max():.4f}]")
-        self.logger.info(f"  Final (bootstrap mean) range: [{ensemble_weights.min():.4f}, "
-                        f"{ensemble_weights.max():.4f}]")
+        self.logger.info(f"  MEREC weights range: [{merec_weights.min():.4f}, "
+                        f"{merec_weights.max():.4f}]")
+        self.logger.info(f"  StdDev weights range: [{std_dev_weights.min():.4f}, "
+                        f"{std_dev_weights.max():.4f}]")
+        self.logger.info(f"  Final (fused+bootstrap) range: [{fused_weights.min():.4f}, "
+                        f"{fused_weights.max():.4f}]")
         
-        # Log PCA details
-        pca_details = result.details["pca"]
-        self.logger.info(f"  PCA: {pca_details['n_components']} components retained, "
-                        f"{pca_details['variance_explained']:.1%} variance explained")
+        # Log fusion reliability scores
+        fusion_info = result.details["fusion"]
+        reliability_scores = fusion_info["reliability_scores"]
+        self.logger.info(f"  Reliability scores: " +
+                        ", ".join([f"{k}={v:.4f}" for k, v in reliability_scores.items()]))
         
         # Log stability
         stability = result.details["stability"]
@@ -375,8 +379,9 @@ class MLMCDMPipeline:
         return {
             'entropy': entropy_weights,
             'critic': critic_weights,
-            'pca': pca_weights,
-            'ensemble': ensemble_weights,
+            'merec': merec_weights,
+            'std_dev': std_dev_weights,
+            'fused': fused_weights,
         }
     
     def _run_mcdm(self, panel_data: PanelData, 
@@ -398,8 +403,8 @@ class MLMCDMPipeline:
         """
         results = {}
         
-        # Use ensemble weights for main analysis
-        w = weights['ensemble']
+        # Use fused weights for main analysis
+        w = weights['fused']
         # Get latest cross-section as DataFrame
         latest_year = max(panel_data.years)
         df = panel_data.cross_section[latest_year][panel_data.components]
@@ -740,7 +745,7 @@ class MLMCDMPipeline:
         
         sens_result = sensitivity.analyze(
             panel_data.get_latest()[panel_data.components].values,
-            weights['ensemble'],
+            weights['fused'],
             topsis_ranking_func,
             criteria_names=panel_data.components,
             alternative_names=panel_data.entities
@@ -807,8 +812,8 @@ class MLMCDMPipeline:
         # Step 2: Calculate MCDM scores on predicted 2025 data
         self.logger.info("Calculating MCDM scores for predicted 2025 data...")
         
-        # Use ensemble weights for MCDM
-        w = weights['ensemble']
+        # Use fused weights for MCDM
+        w = weights['fused']
         weights_dict = {c: w[i] for i, c in enumerate(panel_data.components)}
         
         # Ensure predicted_components is properly formatted

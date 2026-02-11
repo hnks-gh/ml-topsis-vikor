@@ -202,30 +202,21 @@ class WeightingConfig:
       2. PCA Structural Decomposition & Residualization
       3. PCA-Residualized CRITIC Weights
       4. Global Entropy Weights
-      5. PCA Loadings-based Weights
-      6. KL-Divergence Fusion (geometric mean of 3 weight vectors)
-      7. Bayesian Bootstrap validation (Dirichlet-weighted, B iterations)
-      8. Split-half stability verification
+      5. Reliability-weighted adaptive fusion
+      6. Bayesian Bootstrap validation (Dirichlet resampling, B iterations)
+      7. Split-half temporal stability verification
     
     Parameters
     ----------
-    pca_variance_threshold : float
-        Cumulative variance ratio threshold for PCA component retention.
-        Default 0.80 (appropriate for p=29 correlated indicators).
     bootstrap_iterations : int
         Number of Bayesian Bootstrap iterations. Odd numbers conventional
         for percentile-based credible intervals (Davison & Hinkley, 1997).
-    fusion_alphas : List[float]
-        KL-divergence fusion coefficients for [entropy, critic, pca].
-        Default: equal weights [1/3, 1/3, 1/3].
     stability_threshold : float
         Minimum cosine similarity for split-half weight stability.
     epsilon : float
         Numerical stability constant for log/division operations.
     """
-    pca_variance_threshold: float = 0.80
     bootstrap_iterations: int = 999
-    fusion_alphas: List[float] = field(default_factory=lambda: [1/3, 1/3, 1/3])
     stability_threshold: float = 0.95
     epsilon: float = 1e-10
 
@@ -356,10 +347,9 @@ MCDM METHODS:
   Fuzzy temporal variance: {self.fuzzy.use_temporal_variance}
 
 WEIGHTING:
-  Strategy: Robust Global Hybrid (PCA-CRITIC-Entropy + KL-Divergence Fusion)
-  PCA variance threshold: {self.weighting.pca_variance_threshold}
+  Strategy: Robust Global Hybrid (Entropy + CRITIC + MEREC + SD)
+  Fusion: Reliability-Weighted Adaptive
   Bootstrap iterations: {self.weighting.bootstrap_iterations}
-  Fusion alphas: {self.weighting.fusion_alphas}
   Stability threshold: {self.weighting.stability_threshold}
 
 ML METHODS:
