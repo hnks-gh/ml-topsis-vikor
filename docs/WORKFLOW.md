@@ -273,7 +273,8 @@ result = pipeline.run()
 ### Command Line
 
 ```bash
-python run.py
+python main.py                # quick-test (29 bootstrap)
+python main.py --production   # production  (999 bootstrap)
 ```
 
 ### Key Configuration Options

@@ -64,7 +64,7 @@ Quick Start
 For detailed usage, see individual module documentation.
 """
 
-from .config import Config, get_default_config
+from .config import Config, get_default_config, get_config, set_config, reset_config
 from .logger import (
     setup_logger, 
     get_logger, 
@@ -82,12 +82,15 @@ from .pipeline import MLMCDMPipeline, run_pipeline, PipelineResult
 from .output_manager import OutputManager, create_output_manager
 from .visualization import PanelVisualizer, create_visualizer
 
-__version__ = '3.0.0'
+__version__ = '4.0.0'
 
 __all__ = [
     # Configuration
     'Config', 
     'get_default_config',
+    'get_config',
+    'set_config',
+    'reset_config',
     
     # Logging
     'setup_logger', 

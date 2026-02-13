@@ -297,21 +297,32 @@ class HybridWeightingPipeline:
                     f"mean std: {bootstrap_results['std_weights'].mean():.6f}")
 
         # ── Step 5: Temporal Stability Verification ──
-        def compute_weights_from_raw(X: np.ndarray, cols: List[str]) -> np.ndarray:
-            """Helper: normalize and compute fused weights."""
-            X_norm = global_min_max_normalize(X, epsilon=self.epsilon)
-            X_df = pd.DataFrame(X_norm, columns=cols)
-            return compute_fused_weights(X_df, cols)
-        
-        time_values = panel_df[time_col].values
+        # Build a temporary DataFrame for split-half verification
+        stability_df = panel_df[[time_col] + criteria_cols].copy()
+
+        def compute_weights_from_df(df_half):
+            """Helper: normalize subset and compute fused weights."""
+            X_half = df_half[criteria_cols].values.astype(float)
+            X_half_norm = global_min_max_normalize(X_half, epsilon=self.epsilon)
+            X_half_df = pd.DataFrame(X_half_norm, columns=criteria_cols)
+            return compute_fused_weights(X_half_df, criteria_cols)
+
         stability = temporal_stability_verification(
-            X_raw=X_raw,
-            time_values=time_values,
+            panel_df=stability_df,
+            weight_calculator=compute_weights_from_df,
+            entity_col=entity_col,
+            time_col=time_col,
             criteria_cols=criteria_cols,
-            weight_calculator=compute_weights_from_raw,
-            stability_threshold=self.stability_threshold,
-            epsilon=self.epsilon
+            threshold=self.stability_threshold,
         )
+
+        # Convert StabilityResult dataclass → dict for downstream consumption
+        stability = {
+            'cosine_similarity': stability.cosine_similarity,
+            'spearman_correlation': stability.correlation,
+            'is_stable': stability.is_stable,
+            'split_point': stability.split_point,
+        }
         
         logger.info(f"Step 5: Stability — cosine={stability['cosine_similarity']:.4f}, "
                     f"spearman={stability['spearman_correlation']:.4f}")

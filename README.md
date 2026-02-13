@@ -12,7 +12,7 @@ This framework combines state-of-the-art Multi-Criteria Decision Making (MCDM) m
 
 1. **Objective Weighting** via Game Theory Weight Combination (GTWC)
 2. **Hierarchical Ranking** using Intuitionistic Fuzzy Sets (IFS) + Evidential Reasoning (ER)
-3. **Ensemble Forecasting** with multiple machine learning models
+3. **ML Feature Importance** via Random Forest with cross-validation
 
 **Application:** Vietnam PAPI (Provincial Governance and Public Administration Performance Index) analysis across 63 provinces over 14 years (2011-2024).
 
@@ -34,14 +34,11 @@ This framework combines state-of-the-art Multi-Criteria Decision Making (MCDM) m
 - **Uncertainty Quantification**: Bayesian Bootstrap (999 iterations)
 - **Temporal Stability**: Split-half validation
 
-### 🤖 Machine Learning Forecasting
-- **7 Model Types**: 
-  - Tree-based: Gradient Boosting, Random Forest, Extra Trees
-  - Linear: Bayesian Ridge, Huber, Ridge
-  - Neural: MLP, Self-Attention (optional)
-- **Performance-Based Weighting**: Softmax over CV R² scores
-- **Uncertainty Quantification**: Prediction intervals + model disagreement
-- **Rich Feature Engineering**: Lag, rolling stats, momentum, trends
+### 🤖 Machine Learning
+- **Feature Importance**: Random Forest Gini importance with cross-validated R²
+- **Forecasting** *(available, currently isolated from pipeline)*:
+  - 7 Model Types: GB, RF, ET, Bayesian Ridge, Huber, Ridge, MLP
+  - Performance-Based Weighting, Uncertainty Quantification
 
 ### 📊 Analysis & Validation
 - **Convergence Analysis**: Kendall's W concordance coefficient
@@ -73,24 +70,15 @@ This framework combines state-of-the-art Multi-Criteria Decision Making (MCDM) m
 │              │   │  - Final Rank   │
 └──────────────┘   └────────┬────────┘
                             │
-                            ▼
-                   ┌────────────────┐
-                   │  FORECASTING   │
-                   │                │
-                   │ • Features Eng │
-                   │ • 7 ML Models  │
-                   │ • Ensemble     │
-                   │ • Uncertainty  │
-                   └────────┬───────┘
-                            │
-                            ▼
-                   ┌────────────────┐
-                   │   ANALYSIS     │
-                   │                │
-                   │ • Validation   │
-                   │ • Sensitivity  │
-                   │ • Robustness   │
-                   └────────────────┘
+               ┌────────────┼────────────┐
+               ▼            ▼            ▼
+        ┌───────────┐ ┌───────────┐ ┌───────────┐
+        │ ML FEATURE│ │ ANALYSIS  │ │ VISUALISE │
+        │ IMPORTANCE│ │           │ │ & EXPORT  │
+        │           │ │• Sensitiv.│ │           │
+        │• RF Gini  │ │• Robust.  │ │• 5 charts │
+        │• CV R²    │ │• Kendall W│ │• 14 files │
+        └───────────┘ └───────────┘ └───────────┘
 ```
 
 ---
@@ -99,7 +87,7 @@ This framework combines state-of-the-art Multi-Criteria Decision Making (MCDM) m
 
 ```
 ml-mcdm/
-├── run.py                  # Entry point
+├── main.py                 # Entry point
 ├── pyproject.toml          # Package configuration
 ├── requirements.txt        # Dependencies
 │
@@ -264,30 +252,13 @@ Combines 4 weighting methods through:
 
 ---
 
-### Ensemble Machine Learning
+### ML Feature Importance
 
-**7 Model Types:**
+Random Forest Gini importance quantifies each feature's contribution to
+ranking prediction.  Cross-validated R² provides reliability.
 
-| Model | Type | Key Feature |
-|-------|------|-------------|
-| Gradient Boosting | Tree | Huber loss (outlier robust) |
-| Random Forest | Tree | Natural uncertainty from tree variance |
-| Extra Trees | Tree | Extra randomization, lower variance |
-| Bayesian Ridge | Linear | Posterior predictive uncertainty |
-| Huber Regression | Linear | Robust to outliers |
-| Ridge Regression | Linear | Fast L2 regularization |
-| MLP | Neural | SELU activation, self-normalizing |
-| Self-Attention | Neural | Learned feature importance |
-
-**Performance-Based Weighting:**
-$$
-w_i = \frac{\exp(5 \cdot R^2_i)}{\sum_j \exp(5 \cdot R^2_j)}
-$$
-
-**Uncertainty Quantification:**
-$$
-\sigma^2_{\text{total}} = \underbrace{\sum_i w_i \sigma^2_i}_{\text{within-model}} + \underbrace{\sum_i w_i (\hat{y}_i - \bar{\hat{y}})^2}_{\text{disagreement}}
-$$
+> *Full ensemble forecasting (7 models) is implemented in `src/ml/` but
+> currently isolated from the main pipeline.*
 
 ---
 
@@ -297,21 +268,27 @@ $$
 
 | File | Description |
 |------|-------------|
-| `final_rankings.csv` | Current year rankings with scores |
-| `predicted_rankings_2025.csv` | Forecasted rankings |
-| `mcdm_scores_detailed.csv` | Scores from all 12 methods |
-| `weights_analysis.csv` | Criterion weights with uncertainty |
-| `cv_scores.csv` | Cross-validation performance |
-| `feature_importance.csv` | ML feature importance scores |
-| `prediction_uncertainty_2025.csv` | Forecast uncertainty estimates |
+| `final_rankings.csv` | Final province rankings with ER scores |
+| `criterion_weights.csv` | GTWC weights with bootstrap uncertainty |
+| `mcdm_scores_C01–C08.csv` | Per-criterion scores from 12 methods |
+| `mcdm_rank_comparison.csv` | Rank comparison across MCDM methods |
+| `weights_analysis.csv` | Weight derivation details |
+| `feature_importance.csv` | RF Gini importance scores |
+| `cv_scores.csv` | Cross-validation R² by fold |
+| `sensitivity_analysis.csv` | Weight perturbation results |
+| `robustness_summary.csv` | Robustness metrics |
+| `prediction_uncertainty_er.csv` | ER belief-structure uncertainty |
+| `data_summary_statistics.csv` | Descriptive statistics of input data |
+| `execution_summary.json` | Pipeline timing and metadata |
+| `config_snapshot.json` | Full configuration used |
 
 ### Figures (PNG, 300 DPI)
 
-- `current_rankings_map.png`: Geographic visualization
-- `forecast_comparisons.png`: Current vs predicted
-- `method_convergence.png`: MCDM method agreement
-- `feature_importance.png`: Top predictive features
-- `uncertainty_intervals.png`: Prediction confidence bands
+- Final ranking summary chart
+- Score distribution across provinces
+- Weight comparison across criteria
+- Sensitivity analysis heatmap
+- Feature importance bar chart
 
 ### Reports (TXT)
 
