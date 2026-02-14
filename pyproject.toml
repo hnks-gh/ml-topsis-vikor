@@ -97,7 +97,7 @@ zip-safe = false
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*"]
+include = ["mcdm*", "weighting*", "ranking*", "analysis*", "forecasting*", "evidential_reasoning*"]
 exclude = ["tests*", "docs*", "outputs*", "data*", ".venv*", "*.egg-info*"]
 
 [tool.setuptools.package-data]

@@ -88,64 +88,67 @@ This framework combines state-of-the-art Multi-Criteria Decision Making (MCDM) m
 ```
 ml-mcdm/
 ├── main.py                 # Entry point
-├── pyproject.toml          # Package configuration
-├── requirements.txt        # Dependencies
+├── pyproject.toml          # Package configuration & dependencies
 │
 ├── data/                   # Input data
 │   ├── 2011-2024.csv      # Historical panel data
 │   └── codebook/          # Variable descriptions
 │
-├── src/                    # Source code
-│   ├── pipeline.py        # Main orchestrator
-│   ├── config.py          # Configuration management
-│   ├── data_loader.py     # Data I/O and validation
-│   ├── logger.py          # Logging system
-│   ├── output_manager.py  # Results export
-│   ├── visualization.py   # Chart generation (300 DPI)
-│   │
-│   ├── weighting/         # Weight calculation
-│   │   ├── entropy.py
-│   │   ├── critic.py
-│   │   ├── merec.py
-│   │   ├── standard_deviation.py
-│   │   ├── fusion.py      # Game Theory Combination
-│   │   └── hybrid_weighting.py  # Main interface
-│   │
-│   ├── ranking/           # Ranking methods
-│   │   ├── pipeline.py    # Hierarchical ranking orchestrator
-│   │   ├── ifs/           # Intuitionistic Fuzzy Sets
-│   │   │   ├── base.py
-│   │   │   ├── topsis.py
-│   │   │   ├── vikor.py
-│   │   │   ├── promethee.py
-│   │   │   ├── copras.py
-│   │   │   ├── edas.py
-│   │   │   └── saw.py
-│   │   ├── evidential_reasoning/  # ER aggregation
-│   │   │   ├── base.py
-│   │   │   └── hierarchical.py
-│   │   └── traditional/   # Traditional MCDM
-│   │       ├── topsis.py
-│   │       ├── vikor.py
-│   │       ├── promethee.py
-│   │       ├── copras.py
-│   │       ├── edas.py
-│   │       └── saw.py
-│   │
-│   ├── ml/                # Machine learning
-│   │   └── forecasting/
-│   │       ├── base.py
-│   │       ├── features.py          # Feature engineering
-│   │       ├── tree_ensemble.py     # GB, RF, ET
-│   │       ├── linear.py            # Bayesian, Huber, Ridge
-│   │       ├── neural.py            # MLP, Attention
-│   │       └── unified.py           # Ensemble orchestrator
-│   │
-│   └── analysis/          # Analysis tools
-│       ├── sensitivity.py
-│       └── validation.py
+├── pipeline.py            # Main orchestrator
+├── config.py              # Configuration management
+├── data_loader.py         # Data I/O and validation
+├── logger.py              # Logging system
+├── output_manager.py      # Results export
+├── visualization.py       # Chart generation (300 DPI)
 │
-├── outputs/               # Generated results
+├── weighting/             # Weight calculation
+│   ├── entropy.py
+│   ├── critic.py
+│   ├── merec.py
+│   ├── standard_deviation.py
+│   ├── fusion.py          # Game Theory Combination
+│   └── hybrid_weighting.py  # Main interface
+│
+├── mcdm/                  # MCDM methods
+│   ├── traditional/       # Traditional MCDM
+│   │   ├── topsis.py
+│   │   ├── vikor.py
+│   │   ├── promethee.py
+│   │   ├── copras.py
+│   │   ├── edas.py
+│   │   └── saw.py
+│   └── ifs/               # Intuitionistic Fuzzy Sets
+│       ├── base.py
+│       ├── ifs_topsis.py
+│       ├── ifs_vikor.py
+│       ├── ifs_promethee.py
+│       ├── ifs_copras.py
+│       ├── ifs_edas.py
+│       └── ifs_saw.py
+│
+├── evidential_reasoning/  # ER aggregation
+│   ├── base.py            # BeliefDistribution, ER engine
+│   └── hierarchical_er.py # Two-stage hierarchical ER
+│
+├── ranking/               # Ranking orchestrator
+│   └── pipeline.py        # Hierarchical ranking pipeline
+│
+├── analysis/              # Analysis tools
+│   ├── sensitivity.py
+│   └── validation.py
+│
+├── forecasting/           # Machine learning (experimental)
+│   ├── base.py
+│   ├── features.py        # Feature engineering
+│   ├── tree_ensemble.py   # GB, RF, ET
+│   ├── linear.py          # Bayesian, Huber, Ridge
+│   ├── neural.py          # MLP, Attention
+│   └── unified.py         # Ensemble orchestrator
+│
+├── tests/                 # Test suite
+│   └── weighting/         # Weighting module tests
+│
+├── outputs/               # Generated results (git-ignored)
 │   ├── figures/          # PNG charts (300 DPI)
 │   ├── results/          # CSV files
 │   ├── reports/          # Text reports
@@ -257,8 +260,9 @@ Combines 4 weighting methods through:
 Random Forest Gini importance quantifies each feature's contribution to
 ranking prediction.  Cross-validated R² provides reliability.
 
-> *Full ensemble forecasting (7 models) is implemented in `src/ml/` but
-> currently isolated from the main pipeline.*
+> *Full ensemble forecasting (7 models) is implemented in the `forecasting/`
+> module but is currently experimental and isolated from the main pipeline.
+> It will be enhanced and integrated in future releases.*
 
 ---
 

@@ -35,7 +35,8 @@ def main():
     # ------------------------------------------------------------------
     # Lazy imports (avoids heavy loading on --help)
     # ------------------------------------------------------------------
-    from src import MLMCDMPipeline, get_default_config
+    from pipeline import MLMCDMPipeline
+    from config import get_default_config
 
     config = get_default_config()
 

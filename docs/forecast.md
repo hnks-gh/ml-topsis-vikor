@@ -587,7 +587,7 @@ $$
 ### 4.2 API Usage
 
 ```python
-from src.ml.forecasting import UnifiedForecaster, ForecastMode
+from forecasting import UnifiedForecaster, ForecastMode
 
 # Initialize
 forecaster = UnifiedForecaster(
